@@ -76,29 +76,63 @@ function LeafletCityMap({ selected, onSelect }) {
 
 export default function ResearchLocations({ Header, Footer }) {
   const [selected, setSelected] = useState(locations[0]);
+  const [view, setView] = useState('studies');
   const [studies, setStudies] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [clinics, setClinics] = useState([]);
+  const [studiesLoading, setStudiesLoading] = useState(false);
+  const [clinicsLoading, setClinicsLoading] = useState(false);
+  const [studiesError, setStudiesError] = useState('');
+  const [clinicsError, setClinicsError] = useState('');
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError('');
+    setStudiesLoading(true);
+    setStudiesError('');
     searchClinicalTrials({ location: `${selected.city}, ${selected.state}`, status: 'RECRUITING', pageSize: 8 })
       .then(data => {
         if (!active) return;
         const locality = `${selected.city}, ${selected.stateName}`.toLowerCase();
         setStudies(data.studies.filter(study => study.locations.some(site => site.toLowerCase().includes(locality))));
       })
-      .catch(problem => { if (active) { setStudies([]); setError(problem.message || 'Location search is unavailable.'); } })
-      .finally(() => { if (active) setLoading(false); });
+      .catch(problem => { if (active) { setStudies([]); setStudiesError(problem.message || 'Location search is unavailable.'); } })
+      .finally(() => { if (active) setStudiesLoading(false); });
     return () => { active = false; };
   }, [selected]);
+
+  useEffect(() => {
+    if (view !== 'clinics') return undefined;
+    let active = true;
+    setClinicsLoading(true);
+    setClinicsError('');
+    const around = `around:25000,${selected.lat},${selected.lng}`;
+    const query = `[out:json][timeout:20];(node["amenity"~"^(clinic|hospital|doctors)$"](${around});way["amenity"~"^(clinic|hospital|doctors)$"](${around});relation["amenity"~"^(clinic|hospital|doctors)$"](${around});node["healthcare"~"^(clinic|hospital|doctor)$"](${around});way["healthcare"~"^(clinic|hospital|doctor)$"](${around});relation["healthcare"~"^(clinic|hospital|doctor)$"](${around}););out center tags;`;
+    fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
+      .then(response => { if (!response.ok) throw new Error('The OpenStreetMap clinic search is temporarily unavailable.'); return response.json(); })
+      .then(data => {
+        if (!active) return;
+        const seen = new Set();
+        const rows = (data.elements || []).map(place => {
+          const lat = place.lat ?? place.center?.lat;
+          const lng = place.lon ?? place.center?.lon;
+          const name = place.tags?.name || place.tags?.['name:en'];
+          if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          const key = `${name.toLowerCase()}-${lat.toFixed(4)}-${lng.toFixed(4)}`;
+          if (seen.has(key)) return null;
+          seen.add(key);
+          const kind = place.tags?.healthcare || place.tags?.amenity || 'healthcare facility';
+          return { id: `${place.type}-${place.id}`, name, kind: kind.replaceAll('_', ' '), lat, lng, address: [place.tags?.['addr:street'], place.tags?.['addr:city'] || place.tags?.['addr:town'], place.tags?.['addr:state']].filter(Boolean).join(', '), mapUrl: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}` };
+        }).filter(Boolean).slice(0, 12);
+        setClinics(rows);
+      })
+      .catch(problem => { if (active) { setClinics([]); setClinicsError(problem.message || 'Nearby clinic search failed.'); } })
+      .finally(() => { if (active) setClinicsLoading(false); });
+    return () => { active = false; };
+  }, [selected, view]);
 
   const choose = location => setSelected(location);
 
   return <><Header/><main className="locations-page">
-    <section className="locations-hero"><span className="eyebrow">Explore clinical research</span><h1>Find studies by location.</h1><p>Choose a city to look up recruiting public study records and their listed research sites.</p></section>
+    <section className="locations-hero"><span className="eyebrow">Explore clinical research</span><h1>Find care and studies nearby.</h1><p>Choose a city, then switch between nearby healthcare locations and recruiting study records.</p></section>
     <section className="locations-explorer" aria-labelledby="location-picker-title">
       <div className="location-picker-head"><div><span className="eyebrow">Featured search cities</span><h2 id="location-picker-title">Select a city</h2></div><p>These are search shortcuts, not a list of Vitra partner clinics.</p></div>
       <div className="location-layout">
@@ -108,7 +142,10 @@ export default function ResearchLocations({ Header, Footer }) {
         </div>
       </div>
     </section>
-    <section className="location-results" aria-live="polite"><div className="location-results-heading"><div><span className="eyebrow">ClinicalTrials.gov · recruiting records</span><h2>Studies near {selected.city}, {selected.state}</h2></div>{!loading&&!error&&<span className="result-count">{studies.length} {studies.length===1?'record':'records'} shown</span>}</div>{loading&&<div className="location-message" role="status">Loading official study locations…</div>}{error&&<div className="location-message location-error" role="alert">{error}</div>}{!loading&&!error&&studies.length===0&&<div className="location-message">No recruiting records were found for this city. Try another location.</div>}{!loading&&!error&&studies.length>0&&<div className="location-study-grid">{studies.map(study=><article key={study.nctId}><div className="location-study-meta"><span>{study.status}</span><b>{study.nctId}</b></div><h3>{study.title}</h3><p>{study.conditions.join(' · ')||'Condition not listed in source'}</p><ul>{study.locations.filter(site=>site.toLowerCase().includes(`${selected.city}, ${selected.stateName}`.toLowerCase())).slice(0,3).map(site=><li key={site}>{site}</li>)}</ul><a href={study.studyUrl} target="_blank" rel="noreferrer">View official record ↗</a></article>)}</div>}</section>
-    <p className="location-disclaimer">Search results come from public ClinicalTrials.gov records and may change. A listing does not guarantee that a site is enrolling or that someone is eligible; contact the study team to confirm.</p>
+    <section className="location-results" aria-live="polite"><div className="location-results-heading"><div><span className="eyebrow">Explore nearby</span><h2>{view==='studies'?`Studies near ${selected.city}, ${selected.state}`:`Clinics near ${selected.city}, ${selected.state}`}</h2></div><div className="location-result-controls"><div className="location-view-toggle" role="group" aria-label="Choose nearby results">{[['clinics','Clinics'],['studies','Nearby studies']].map(([value,label])=><button key={value} type="button" aria-pressed={view===value} className={view===value?'active':''} onClick={()=>setView(value)}>{label}</button>)}</div>{view==='studies'&&!studiesLoading&&!studiesError&&<span className="result-count">{studies.length} {studies.length===1?'record':'records'} shown</span>}{view==='clinics'&&!clinicsLoading&&!clinicsError&&<span className="result-count">{clinics.length} {clinics.length===1?'place':'places'} shown</span>}</div></div>
+      {view==='studies'&&(studiesLoading?<div className="location-message" role="status">Loading official study locations…</div>:studiesError?<div className="location-message location-error" role="alert">{studiesError}</div>:studies.length===0?<div className="location-message">No recruiting records were found for this city. Try another location.</div>:<div className="location-study-grid">{studies.map(study=><article key={study.nctId}><div className="location-study-meta"><span>{study.status}</span><b>{study.nctId}</b></div><h3>{study.title}</h3><p>{study.conditions.join(' · ')||'Condition not listed in source'}</p><ul>{study.locations.filter(site=>site.toLowerCase().includes(`${selected.city}, ${selected.stateName}`.toLowerCase())).slice(0,3).map(site=><li key={site}>{site}</li>)}</ul><a href={study.studyUrl} target="_blank" rel="noreferrer">View official record ↗</a></article>)}</div>)}
+      {view==='clinics'&&(clinicsLoading?<div className="location-message" role="status">Searching OpenStreetMap for nearby healthcare locations…</div>:clinicsError?<div className="location-message location-error" role="alert">{clinicsError}</div>:clinics.length===0?<div className="location-message">No named clinics or hospitals were found nearby. Try another city or switch to nearby studies.</div>:<div className="location-study-grid">{clinics.map(place=><article key={place.id}><div className="location-study-meta"><span>{place.kind}</span><b>OpenStreetMap</b></div><h3>{place.name}</h3><p>{place.address||`${selected.city}, ${selected.state}`}</p><a href={place.mapUrl} target="_blank" rel="noreferrer">View on map ↗</a></article>)}</div>)}
+    </section>
+    <p className="location-disclaimer">Clinic locations are sourced from OpenStreetMap and may be incomplete or out of date. Recruiting study records come from ClinicalTrials.gov; a listing does not guarantee that a site is enrolling or that someone is eligible. Confirm details with the location or study team.</p>
   </main><Footer/></>;
 }

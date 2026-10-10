@@ -1,5 +1,14 @@
 # Vitra
 
+## Website areas
+
+Vitra has two main user-facing areas:
+
+- **Public website (frontend):** the homepage and public navigation pages, including How it works, Clinical trial guide, Locations, Research team, and About us. Visitors can explore these pages without signing in. The Locations page lets visitors switch between nearby healthcare locations sourced from OpenStreetMap and recruiting study records sourced from ClinicalTrials.gov.
+- **Signed-in workspaces:** users sign in or create an account before opening the patient or researcher workspace. Patient pages contain the user's own profile and saved-study experience. Researcher pages contain study management, synthetic patient review, eligibility parsing, and recruitment tools. Workspace access and available actions depend on the user's role.
+
+The signed-in pages are still part of the frontend. The backend is the separate service layer that supports trusted operations and data access, including the FastAPI API and Firebase Authentication/Firestore described below.
+
 ## Synthetic patient workspace
 
 The doctor/researcher **Patients data** page imports synthetic FHIR R4 patient Bundles, displays source provenance and validated clinical evidence, and compares normalized profiles with parsed eligibility rules. A fictional demo dataset and offline read-only snapshot are included. See [generation, import, and validation instructions](backend/SYNTHETIC_DATA.md). All matching remains preliminary; official screening is required.
