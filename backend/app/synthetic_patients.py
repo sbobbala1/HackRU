@@ -127,7 +127,7 @@ def import_bundle(bundle, synthetic_attested=False, as_of=None):
 
 
 def match_normalized(parsed, profile):
-    labs = {}; evidence = {}
+    labs = []; evidence = {}
     for c in parsed.laboratory_thresholds:
         key = (c.requirement or '').replace(' ', '').lower()
         aliases = {'hba1c': ('4548-4',), 'glucose': ('2345-7', '2339-0')}
@@ -143,21 +143,16 @@ def match_normalized(parsed, profile):
             else: candidates = []
         if candidates:
             selected = max(candidates, key=lambda o: o['date'])
-            labs[c.requirement] = selected['value']; evidence[c.original_text] = selected
+            labs.append(dict(name=c.requirement, value=selected['value'], unit=selected['unit'], date=selected['date'])); evidence[c.original_text] = selected
     conditions = [x['label'] for x in profile['conditions'] if x['status'] == 'active']
-    result = match_parsed_eligibility(parsed, SyntheticProfile(profile_id=profile['profile_id'], age=profile['age'], conditions=conditions, labs=labs))
+    result = match_parsed_eligibility(parsed, SyntheticProfile(profile_id=profile['profile_id'], age=profile['age'], conditions=conditions, labs=labs), evaluation_date=day(profile['as_of']))
     rows = result.model_dump()
-    exclusion_texts = {c.original_text for c in parsed.exclusion_criteria}
-    compound_texts = {c.original_text for c in [*parsed.inclusion_criteria, *parsed.exclusion_criteria] if c.logic in ('AND','OR','unknown')}
     for row in rows['criteria']:
-        if row['original_text'] in compound_texts or (row['original_text'] in exclusion_texts and row['criterion_type'] in ('age','laboratory')):
-            row.update(status='UNKNOWN', explanation='Compound logic or unsupported exclusion requires manual review.', manual_review=True)
-            continue
-        if row['criterion_type'] == 'diagnosis' and row['original_text'] in exclusion_texts:
-            row['status'] = 'NOT_MET' if row['status'] == 'MET' else 'UNKNOWN'
-            row['explanation'] = 'A documented condition conflicts with this exclusion.' if row['status']=='NOT_MET' else 'No documented conflict; absence is not established by this incomplete record.'
-    evaluated = {r['original_text'] for r in rows['criteria'] if r['criterion_type']=='diagnosis' and r['status']!='UNKNOWN'}
-    rows['criteria'] = [r for r in rows['criteria'] if not (r['criterion_type'] in ('inclusion','exclusion') and r['original_text'] in evaluated)]
+        row['status'] = row['status'].replace(' ', '_')
+    compound_texts = {c.original_text for c in parsed.criteria if c.logic in ('AND','OR','unknown')}
+    for row in rows['criteria']:
+        if row['original_text'] in compound_texts:
+            row.update(status='UNKNOWN', explanation='Compound logic requires manual review.', manual_review=True)
     for row in rows['criteria']:
         row['provenance'] = [evidence[row['original_text']]] if row['original_text'] in evidence else [profile['age_source']] if row['criterion_type']=='age' else profile['conditions'] if row['criterion_type']=='diagnosis' else []
     rows['counts'] = {s:sum(r['status']==s for r in rows['criteria']) for s in ('MET','NOT_MET','UNKNOWN')}

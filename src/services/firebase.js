@@ -2,7 +2,9 @@ import { initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
   getAuth,
+  onAuthStateChanged,
   signInWithEmailAndPassword,
+  signOut,
   updateProfile,
 } from 'firebase/auth';
 
@@ -17,6 +19,14 @@ const config = {
 
 export const firebaseEnabled = Boolean(config.apiKey && config.projectId && config.appId);
 export const auth = firebaseEnabled ? getAuth(initializeApp(config)) : null;
+
+export function watchAuthState(callback) {
+  return auth ? onAuthStateChanged(auth, callback) : () => {};
+}
+
+export async function signOutUser() {
+  if (auth) await signOut(auth);
+}
 
 export async function authenticateWithFirebase({ mode, email, password, role }) {
   if (!auth) return null;
