@@ -3,19 +3,19 @@ import { getClinicalTrial } from './services/clinicalTrials';
 import { api } from './services/api';
 
 const STUDIES = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
-const patients = [
-  {profile_id:'SYN-001',age:56,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-08-01'}],medications_complete:true,labs:[{name:'HbA1c',value:8.1,unit:'%',date:'2026-08-10'},{name:'BMI',value:29,unit:'kg/m2',date:'2026-08-10'}],facts:{}},
-  {profile_id:'SYN-002',age:44,conditions:['Type 1 diabetes'],conditions_complete:true,medications:[{name:'Insulin',status:'current'}],medications_complete:true,labs:[{name:'HbA1c',value:8.2,unit:'%',date:'2026-09-01'}],facts:{}},
-  {profile_id:'SYN-003',age:null,conditions:null,conditions_complete:false,medications:null,medications_complete:false,labs:null,facts:{}},
-  {profile_id:'SYN-004',age:17,conditions:['Type 2 diabetes'],conditions_complete:true,medications:['Dulaglutide'],medications_complete:true,labs:[{name:'HbA1c',value:8.0,unit:'%',date:'2026-09-01'}],facts:{}},
-  {profile_id:'SYN-005',age:72,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2026-06-01'}],medications_complete:true,labs:[{name:'HbA1c',value:9.8,unit:'%',date:'2026-09-01'}],facts:{}},
-  {profile_id:'SYN-006',age:52,conditions:['Type 2 diabetes','No type 2 diabetes'],conditions_complete:true,medications:['Dulaglutide'],medications_complete:true,labs:[{name:'HbA1c',value:7.4,unit:'%',date:'2026-08-15'}],facts:{}},
-  {profile_id:'SYN-007',age:49,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[],medications_complete:true,labs:[{name:'HbA1c',value:7.0,unit:'%',date:'2026-09-01'}],facts:{}},
-  {profile_id:'SYN-008',age:39,conditions:['Knee osteoarthritis'],conditions_complete:true,medications:[{name:'Prednisone',status:'current'}],medications_complete:true,labs:[{name:'BMI',value:42,unit:'kg/m2',date:'2026-09-01'}],facts:{}},
-  {profile_id:'SYN-009',age:61,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-11-15'}],medications_complete:true,labs:[{name:'HbA1c',value:9.5,unit:'%',date:'2026-09-15'}],facts:{}},
-  {profile_id:'SYN-010',age:58,conditions:['Type 2 diabetes'],conditions_complete:false,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-12-01'}],medications_complete:false,labs:[],facts:{}},
-  {profile_id:'SYN-011',age:80,conditions:['Knee osteoarthritis'],conditions_complete:true,medications:[],medications_complete:true,labs:[{name:'BMI',value:30,unit:'kg/m2',date:'2026-09-01'}],facts:{}},
-  {profile_id:'SYN-012',age:55,conditions:['Asthma'],conditions_complete:true,medications:[{name:'Corticosteroid',status:'past',end_date:'2026-01-01'}],medications_complete:true,labs:[],facts:{}},
+export const patients = [
+  {profile_id:'SYN-001',demo_consent:true,age:56,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-08-01'}],medications_complete:true,labs:[{name:'HbA1c',value:8.1,unit:'%',date:'2026-08-10'},{name:'BMI',value:29,unit:'kg/m2',date:'2026-08-10'}],facts:{}},
+  {profile_id:'SYN-002',demo_consent:false,age:44,conditions:['Type 1 diabetes'],conditions_complete:true,medications:[{name:'Insulin',status:'current'}],medications_complete:true,labs:[{name:'HbA1c',value:8.2,unit:'%',date:'2026-09-01'}],facts:{}},
+  {profile_id:'SYN-003',demo_consent:false,age:null,conditions:null,conditions_complete:false,medications:null,medications_complete:false,labs:null,facts:{}},
+  {profile_id:'SYN-004',demo_consent:false,age:17,conditions:['Type 2 diabetes'],conditions_complete:true,medications:['Dulaglutide'],medications_complete:true,labs:[{name:'HbA1c',value:8.0,unit:'%',date:'2026-09-01'}],facts:{}},
+  {profile_id:'SYN-005',demo_consent:false,age:72,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2026-06-01'}],medications_complete:true,labs:[{name:'HbA1c',value:9.8,unit:'%',date:'2026-09-01'}],facts:{}},
+  {profile_id:'SYN-006',demo_consent:true,age:52,conditions:['Type 2 diabetes','No type 2 diabetes'],conditions_complete:true,medications:['Dulaglutide'],medications_complete:true,labs:[{name:'HbA1c',value:7.4,unit:'%',date:'2026-08-15'}],facts:{}},
+  {profile_id:'SYN-007',demo_consent:true,age:49,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[],medications_complete:true,labs:[{name:'HbA1c',value:7.0,unit:'%',date:'2026-09-01'}],facts:{}},
+  {profile_id:'SYN-008',demo_consent:false,age:39,conditions:['Knee osteoarthritis'],conditions_complete:true,medications:[{name:'Prednisone',status:'current'}],medications_complete:true,labs:[{name:'BMI',value:42,unit:'kg/m2',date:'2026-09-01'}],facts:{}},
+  {profile_id:'SYN-009',demo_consent:true,age:61,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-11-15'}],medications_complete:true,labs:[{name:'HbA1c',value:9.5,unit:'%',date:'2026-09-15'}],facts:{}},
+  {profile_id:'SYN-010',demo_consent:false,age:58,conditions:['Type 2 diabetes'],conditions_complete:false,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-12-01'}],medications_complete:false,labs:[],facts:{}},
+  {profile_id:'SYN-011',demo_consent:false,age:80,conditions:['Knee osteoarthritis'],conditions_complete:true,medications:[],medications_complete:true,labs:[{name:'BMI',value:30,unit:'kg/m2',date:'2026-09-01'}],facts:{}},
+  {profile_id:'SYN-012',demo_consent:false,age:55,conditions:['Asthma'],conditions_complete:true,medications:[{name:'Corticosteroid',status:'past',end_date:'2026-01-01'}],medications_complete:true,labs:[],facts:{}},
 ];
 
 const researcherNavigation = [
