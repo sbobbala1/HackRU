@@ -1,0 +1,245 @@
+[
+  {
+    "resourceType": "Bundle",
+    "type": "collection",
+    "meta": {
+      "tag": [
+        {
+          "code": "synthetic",
+          "display": "Hand-authored fictional demo, not Synthea output"
+        }
+      ]
+    },
+    "entry": [
+      {
+        "resource": {
+          "resourceType": "Patient",
+          "id": "fictional-patient",
+          "birthDate": "1974-01-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Condition",
+          "id": "fictional-condition",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "clinicalStatus": {
+            "coding": [
+              {
+                "code": "active"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "code": "44054006",
+                "display": "Type 2 Diabetes"
+              }
+            ]
+          },
+          "onsetDateTime": "2025-01-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "MedicationRequest",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "status": "active",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "code": "860975",
+                "display": "Metformin"
+              }
+            ]
+          },
+          "authoredOn": "2026-10-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Procedure",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "status": "completed",
+          "code": {
+            "text": "Synthetic routine examination"
+          },
+          "performedDateTime": "2026-10-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Observation",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "4548-4",
+                "display": "HbA1c"
+              }
+            ]
+          },
+          "effectiveDateTime": "2026-10-01",
+          "valueQuantity": {
+            "value": 8.1,
+            "unit": "%",
+            "code": "%",
+            "system": "http://unitsofmeasure.org"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Bundle",
+    "type": "collection",
+    "meta": {
+      "tag": [
+        {
+          "code": "synthetic",
+          "display": "Hand-authored fictional demo, not Synthea output"
+        }
+      ]
+    },
+    "entry": [
+      {
+        "resource": {
+          "resourceType": "Patient",
+          "id": "fictional-patient",
+          "birthDate": "1944-01-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Condition",
+          "id": "fictional-condition",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "clinicalStatus": {
+            "coding": [
+              {
+                "code": "active"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "code": "44054006",
+                "display": "Type 2 Diabetes"
+              }
+            ]
+          },
+          "onsetDateTime": "2025-01-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "MedicationRequest",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "status": "active",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "code": "860975",
+                "display": "Metformin"
+              }
+            ]
+          },
+          "authoredOn": "2026-10-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Procedure",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "status": "completed",
+          "code": {
+            "text": "Synthetic routine examination"
+          },
+          "performedDateTime": "2026-10-01"
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Observation",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "4548-4",
+                "display": "HbA1c"
+              }
+            ]
+          },
+          "effectiveDateTime": "2026-10-01",
+          "valueQuantity": {
+            "value": 8.3,
+            "unit": "%",
+            "code": "%",
+            "system": "http://unitsofmeasure.org"
+          }
+        }
+      },
+      {
+        "resource": {
+          "resourceType": "Condition",
+          "subject": {
+            "reference": "Patient/fictional-patient"
+          },
+          "clinicalStatus": {
+            "coding": [
+              {
+                "code": "active"
+              }
+            ]
+          },
+          "code": {
+            "text": "Cancer"
+          },
+          "onsetDateTime": "2026-09-01"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Bundle",
+    "type": "collection",
+    "meta": {
+      "tag": [
+        {
+          "code": "synthetic",
+          "display": "Hand-authored fictional demo, not Synthea output"
+        }
+      ]
+    },
+    "entry": [
+      {
+        "resource": {
+          "resourceType": "Patient",
+          "id": "fictional-patient"
+        }
+      }
+    ]
+  }
+]

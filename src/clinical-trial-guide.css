@@ -1,0 +1,69 @@
+.trial-guide-page{background:#fff;color:#18344e}
+.trial-guide-hero{display:grid;grid-template-columns:1fr 1fr;min-height:490px;background:#f1f7f8}
+.trial-guide-hero-copy{align-self:center;padding:70px clamp(24px,8vw,120px)}
+.trial-guide-hero h1{max-width:690px;margin:13px 0 16px;font-family:'DM Sans',sans-serif;font-size:clamp(2.8rem,5vw,4.8rem);font-weight:750;letter-spacing:-.06em;line-height:1.03}
+.trial-guide-hero-copy>p{max-width:630px;color:#506b79;font-size:1.08rem;line-height:1.7}
+.trial-guide-actions{display:flex;align-items:center;flex-wrap:wrap;gap:18px;margin-top:25px}
+.trial-guide-actions .btn{border-radius:7px;background:#0c6682;color:#fff;text-decoration:none}
+.guide-secondary-link,.guide-basics-copy>a,.trial-guide-after a:not(.btn),.phase-source{color:#126987;font-size:.87rem;font-weight:750;text-decoration:none}
+.guide-secondary-link:hover,.guide-basics-copy>a:hover,.trial-guide-after a:hover,.phase-source:hover{ text-decoration:underline;text-underline-offset:3px}
+.trial-guide-hero-image{min-height:420px;background:linear-gradient(90deg,#0c243c05,#0c243c10),url('./assets/vitra-clinic-team.png') 42% center/cover no-repeat}
+.trial-guide-sequence,.trial-guide-phases{padding:78px clamp(24px,8vw,128px)}
+.trial-guide-sequence{background:#f4f8f9}
+.trial-guide-heading{max-width:1000px;margin:0 auto 25px;text-align:left}
+.trial-guide-heading .eyebrow{justify-content:flex-start}
+.trial-guide-heading h2,.guide-basics-copy h2,.trial-guide-after h2{margin:10px 0 13px;font-size:clamp(2rem,3.6vw,3.2rem);letter-spacing:-.045em;line-height:1.12}
+.trial-guide-heading>p{margin:0;color:#5f7582;font-size:.96rem;line-height:1.65}
+.trial-guide-steps{display:grid;max-width:1000px;margin:auto;padding:0;list-style:none;border-top:1px solid #d5e1e5}
+.trial-guide-step{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:start;padding:23px 8px;border-bottom:1px solid #d5e1e5}
+.trial-guide-number{padding-top:1px;color:#0b8279;font-size:.93rem;font-weight:800;letter-spacing:.06em}
+.trial-guide-step-copy h3{margin:0 0 6px;color:#17374c;font-size:1.12rem}
+.trial-guide-step-copy p{max-width:850px;margin:0;color:#526d7b;font-size:.9rem;line-height:1.65}
+.trial-guide-basics{display:grid;grid-template-columns:1fr .9fr;gap:clamp(34px,7vw,92px);align-items:center;padding:82px clamp(24px,8vw,128px);background:#f3f7f9}
+.guide-basics-copy h2{max-width:570px}
+.guide-basics-copy p{max-width:660px;color:#526d7b;font-size:.95rem;line-height:1.75}
+.guide-basics-copy .guide-registry-note{padding:13px 15px;border-left:3px solid #42a9a1;border-radius:0 7px 7px 0;background:#e9f5f4;color:#385c64;font-size:.84rem}
+.guide-basics-copy>a{display:inline-block;margin-top:9px}
+.guide-question-card{padding:28px 30px;border:1px solid #dce7ec;border-radius:14px;background:#fff;box-shadow:0 14px 32px #1734470c}
+.guide-question-card h3{margin:0 0 16px;color:#17374c;font-size:1.2rem}
+.guide-question-card ul{display:grid;gap:11px;padding-left:20px;color:#526d7b;font-size:.87rem;line-height:1.55}
+.guide-question-card li::marker{color:#0c8894}
+.guide-question-card>p{margin:18px 0 0;padding-top:15px;border-top:1px solid #e8eef1;color:#687e89;font-size:.82rem;line-height:1.6}
+.trial-guide-phases{background:#fff}
+.phase-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;max-width:1280px;margin:0 auto 21px}
+.phase-grid article{padding:20px;border:1px solid #dfe8ed;border-radius:11px;background:#f9fbfc}
+.phase-grid article>span{display:inline-block;padding:5px 8px;border-radius:5px;background:#e4f2f2;color:#0c7182;font-size:.72rem;font-weight:800}
+.phase-grid article p{margin:13px 0 0;color:#526d7b;font-size:.83rem;line-height:1.65}
+.phase-source{display:block;max-width:1280px;margin:auto}
+.trial-guide-after{display:flex;align-items:center;justify-content:space-between;gap:35px;padding:62px clamp(24px,8vw,128px);background:#0e2c43;color:#fff}
+.trial-guide-after>div:first-child{max-width:720px}
+.trial-guide-after .eyebrow{color:#94e2d8}
+.trial-guide-after h2{color:#fff}
+.trial-guide-after p{color:#d2e1e8;font-size:.93rem;line-height:1.7}
+.trial-guide-after a:not(.btn){color:#9adfd6}
+.guide-after-actions{display:grid;gap:17px;justify-items:start;flex:0 0 auto}
+.guide-after-actions .btn{background:#54d0c3;color:#082d3c;text-decoration:none}
+.trial-guide-sources{padding:48px clamp(24px,8vw,128px) 60px;background:#f5f8fa}
+.trial-guide-sources h2{margin:0 0 8px;color:#17374c;font-size:1.13rem}
+.trial-guide-sources p{margin:0 0 15px;color:#6a808b;font-size:.8rem;line-height:1.55}
+.trial-guide-sources ul{display:flex;flex-wrap:wrap;gap:10px 25px;margin:0;padding:0;list-style:none}
+.trial-guide-sources li a{color:#126987;font-size:.78rem;text-decoration:underline;text-underline-offset:2px}
+.trial-guide-research-feature{display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,1.05fr);gap:clamp(35px,6vw,84px);align-items:center;margin:0 clamp(20px,3vw,42px) 38px;padding:clamp(36px,6vw,78px);overflow:hidden;border:1px solid #e0e5eb;border-radius:24px;background:#f1f3f6;color:#142d45}
+.trial-guide-feature-copy{max-width:660px}.trial-guide-feature-copy .eyebrow{color:#426274;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase}
+.trial-guide-feature-copy h2{max-width:650px;margin:19px 0 17px;color:#132a41;font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.3rem,4.2vw,4.15rem);font-weight:500;letter-spacing:-.035em;line-height:1.13}
+.trial-guide-feature-copy>p{max-width:620px;margin:0;color:#4b6374;font-size:1.02rem;line-height:1.75}
+.trial-guide-feature-actions{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:28px}
+.trial-guide-feature-actions .btn{padding:13px 21px;border-radius:999px;background:#123e78;color:#fff;text-decoration:none}
+.trial-guide-feature-secondary{display:inline-flex;align-items:center;min-height:47px;padding:10px 20px;border:2px solid #123e78;border-radius:999px;color:#123e78;font-weight:700;text-decoration:none}
+.trial-guide-feature-actions a:hover{transform:translateY(-1px)}
+.trial-guide-feature-art{position:relative;display:grid;min-height:365px;place-items:center;overflow:hidden;border-radius:16px;background:radial-gradient(ellipse at 48% 50%,#e3f6fa 0,#c7e8f2 48%,#a9d2e0 100%)}
+.trial-guide-feature-art:before,.trial-guide-feature-art:after{position:absolute;content:"";width:440px;height:440px;border:1px solid #fff8;border-radius:50%}
+.trial-guide-feature-art:after{width:340px;height:340px}
+.trial-guide-feature-art svg{position:relative;z-index:1;width:min(96%,620px);height:auto;filter:drop-shadow(0 10px 12px #367b9330)}
+.dna-backbone{fill:none;stroke:#378ba4;stroke-width:17;stroke-linecap:round}
+.dna-backbone-alt{stroke:#73b7c8}
+.dna-rungs{fill:none;stroke:#f7ffff;stroke-width:8;stroke-linecap:round;opacity:.9}
+.dna-highlight{fill:#ef8f91;stroke:#fff;stroke-width:7}
+.feature-tag{position:absolute;right:18px;bottom:18px;z-index:2;padding:9px 14px;border:1px solid #ffffffa8;border-radius:999px;background:#ffffffd9;color:#28566e;font-size:.75rem;font-weight:800;box-shadow:0 5px 16px #17344710}
+@media(max-width:900px){.trial-guide-hero{grid-template-columns:1fr}.trial-guide-hero-copy{padding-top:65px;padding-bottom:50px}.trial-guide-hero-image{min-height:340px}.trial-guide-basics{grid-template-columns:1fr}.phase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.trial-guide-after{align-items:flex-start;flex-direction:column}.trial-guide-research-feature{grid-template-columns:1fr}.trial-guide-feature-art{min-height:320px}}
+@media(max-width:580px){.trial-guide-hero-copy{padding:58px 22px 42px}.trial-guide-hero h1{font-size:2.85rem}.trial-guide-hero-image{min-height:260px;background-position:38% center}.trial-guide-sequence,.trial-guide-phases{padding:64px 21px}.trial-guide-heading{text-align:left}.trial-guide-steps{gap:0}.trial-guide-step{grid-template-columns:43px minmax(0,1fr);gap:8px;padding:19px 0}.trial-guide-step-copy p{font-size:.85rem}.phase-grid{grid-template-columns:1fr}.trial-guide-basics{padding:65px 21px}.guide-question-card{padding:23px}.trial-guide-after{padding:58px 21px}.trial-guide-sources{padding:44px 21px}.trial-guide-sources ul{display:grid}.trial-guide-research-feature{grid-template-columns:1fr;gap:28px;margin:0 14px 24px;padding:30px 23px;border-radius:17px}.trial-guide-feature-copy h2{font-size:2.5rem}.trial-guide-feature-copy>p{font-size:.92rem}.trial-guide-feature-art{min-height:260px}.trial-guide-feature-actions{align-items:flex-start;flex-direction:column}.trial-guide-feature-actions .btn,.trial-guide-feature-secondary{justify-content:center}}
