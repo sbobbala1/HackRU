@@ -20,33 +20,83 @@ from dotenv import load_dotenv
 from .eligibility_parser import ParsedEligibility, parse_deterministic
 from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility, rank_profiles
 from .llm_assist import suggest_criterion_types, summarize_match
+from .trial_explainer import answer_trial_question
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 
 app = FastAPI(title="Vitra API", version="0.1.0")
+
+@app.get('/demo/studies/{nct_id}/evaluate')
+def evaluate_demo(nct_id: str):
+    from .demo import run_demo
+    try:
+        return run_demo(nct_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+class ExplainerSource(BaseModel):
+    id: str = Field(pattern=r'^S[1-6]$')
+    path: str = Field(max_length=150)
+    quote: str = Field(min_length=1, max_length=20000)
+
+class ExplainerInput(BaseModel):
+    nct_id: str = Field(pattern=r'^NCT\d{8}$')
+    question: str = Field(min_length=1,max_length=2000)
+    language: str = Field(default='en',max_length=10)
+    demo: bool = False
+
+@app.post('/trials/explain')
+def explain_trial(payload: ExplainerInput):
+    try:
+        if payload.demo:
+            from .demo import cached_record
+            from .trial_explainer import source_answer, source_fields
+            record = cached_record(payload.nct_id)
+            if payload.language != 'en':
+                return answer_trial_question(payload.nct_id, payload.question, payload.language, record=record)
+            result = source_answer(payload.nct_id, payload.question, source_fields(record))
+            result['notice'] = 'Deterministic demo: original cached study excerpts, no LLM request.'
+            return result
+        return answer_trial_question(payload.nct_id, payload.question, payload.language)
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(502, str(exc)) from exc
+    except Exception as exc:
+        # Do not expose secrets, provider response bodies, or arbitrary exception text.
+        name=type(exc).__name__
+        message='Unable to read the trial record or generate an AI answer. Check connectivity and retry.'
+        if name=='AuthenticationError': message='OpenAI rejected the backend API key. Check backend/.env and restart the backend.'
+        elif name=='RateLimitError': message='OpenAI quota or rate limit reached. Check API billing and retry shortly.'
+        elif name in ('APITimeoutError','TimeoutError'): message='The trial or AI request timed out. Please retry.'
+        raise HTTPException(502,message) from exc
 class SyntheticImportInput(BaseModel):
     bundle: dict
     synthetic_attested: bool = False
+    demo: bool = False
 
 class SyntheticMatchInput(SyntheticImportInput):
     parsed: ParsedEligibility
 
 @app.get('/synthetic/patients/demo')
-def demo_patients():
+def demo_patients(demo: bool = False):
+    from .demo import DEMO_DATE
     bundles = json.loads((Path(__file__).parent / 'data' / 'synthetic_demo.json').read_text())
-    return {'profiles': [import_bundle(b, True) for b in bundles], 'bundles': bundles}
+    return {'profiles': [import_bundle(b, True, DEMO_DATE if demo else None) for b in bundles], 'bundles': bundles}
 
 @app.post('/synthetic/patients/import')
 def import_patient(payload: SyntheticImportInput):
     try:
-        return import_bundle(payload.bundle, payload.synthetic_attested)
+        from .demo import DEMO_DATE
+        return import_bundle(payload.bundle, payload.synthetic_attested, DEMO_DATE if payload.demo else None)
     except (ValueError, TypeError, AttributeError) as exc:
         raise HTTPException(422, 'Invalid synthetic FHIR Bundle: ' + str(exc)) from exc
 
 @app.post('/synthetic/patients/match')
 def match_imported_patient(payload: SyntheticMatchInput):
     try:
-        return match_normalized(payload.parsed, import_bundle(payload.bundle, payload.synthetic_attested))
+        from .demo import DEMO_DATE
+        return match_normalized(payload.parsed, import_bundle(payload.bundle, payload.synthetic_attested, DEMO_DATE if payload.demo else None))
     except (ValueError, TypeError, AttributeError) as exc:
         raise HTTPException(422, 'Invalid synthetic FHIR Bundle: ' + str(exc)) from exc
 app.add_middleware(
@@ -97,7 +147,8 @@ class InvitationInput(BaseModel):
 
 class EligibilityParseInput(BaseModel):
     study_id: str = Field(min_length=1, max_length=64)
-    original_eligibility_text: str = Field(max_length=50000)
+    original_eligibility_text: str = Field(min_length=1, max_length=50000)
+    use_ai: bool = False
 
 class ParsedMatchInput(BaseModel):
     parsed: ParsedEligibility
@@ -109,6 +160,7 @@ class TrialRankingInput(BaseModel):
     eligibility_text: str = Field(min_length=1, max_length=50000)
     profiles: list[SyntheticProfile] = Field(min_length=1, max_length=100)
     evaluation_date: datetime | None = None
+    use_ai: bool = False
 
 def _attach_llm_suggestions(parsed: ParsedEligibility, source_text: str) -> None:
     suggestions = suggest_criterion_types(source_text) or []
@@ -124,7 +176,7 @@ def _attach_llm_suggestions(parsed: ParsedEligibility, source_text: str) -> None
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "Vitra API"}
+    return {"status": "ok", "service": "Vitra API", "workflow_version": "qa-workflow-1"}
 
 @app.post("/eligibility/parse", response_model=ParsedEligibility)
 def parse_eligibility(payload: EligibilityParseInput):
@@ -135,7 +187,7 @@ def parse_eligibility(payload: EligibilityParseInput):
     The fallback is intentionally conservative and flags ambiguous wording.
     """
     parsed = parse_deterministic(payload.study_id, payload.original_eligibility_text)
-    if os.getenv('OPENAI_API_KEY'):
+    if payload.use_ai and (os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY')):
         try:
             _attach_llm_suggestions(parsed, payload.original_eligibility_text)
         except Exception:
@@ -149,13 +201,13 @@ def match_eligibility(payload: ParsedMatchInput):
 @app.post('/eligibility/rank', response_model=list[ParsedMatch])
 def rank_eligibility(payload: TrialRankingInput):
     parsed = parse_deterministic(payload.study_nct_id, payload.eligibility_text)
-    if os.getenv('OPENAI_API_KEY'):
+    if payload.use_ai and (os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY')):
         try:
             _attach_llm_suggestions(parsed, payload.eligibility_text)
         except Exception:
             pass
     results = rank_profiles(parsed, payload.profiles, payload.source_url, payload.evaluation_date.date() if payload.evaluation_date else None)
-    if os.getenv('OPENAI_API_KEY'):
+    if payload.use_ai and (os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY')):
         for result in results:
             result.parser = parsed.parser
             result.llm_suggestions = parsed.llm_suggestions

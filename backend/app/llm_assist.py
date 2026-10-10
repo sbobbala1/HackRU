@@ -1,4 +1,4 @@
-"""Optional OpenAI structured assistance; deterministic code retains state authority."""
+"""Optional Gemini/OpenAI structured assistance; deterministic code retains state authority."""
 from __future__ import annotations
 
 import json
@@ -6,6 +6,9 @@ import os
 
 
 def _client():
+    if os.getenv('GEMINI_API_KEY'):
+        from .gemini_client import GeminiClient
+        return GeminiClient(os.environ['GEMINI_API_KEY'])
     if not os.getenv('OPENAI_API_KEY'):
         return None
     from openai import OpenAI
