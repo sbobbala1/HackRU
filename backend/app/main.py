@@ -4,6 +4,7 @@ The browser never reads match results directly. Firebase Authentication tokens a
 verified here and Firestore Admin access is used only after role and consent checks.
 """
 from datetime import datetime, timezone
+import os
 from typing import Literal
 
 import firebase_admin
@@ -12,13 +13,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import auth, credentials, firestore
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 from .eligibility_parser import ParsedEligibility, parse_deterministic
-from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility
+from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility, rank_profiles
+from .llm_assist import suggest_criterion_types, summarize_match
+
+load_dotenv()
 
 app = FastAPI(title="Vitra API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # replace/add Hosting domain in production
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],  # replace/add Hosting domain in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,6 +75,24 @@ class ParsedMatchInput(BaseModel):
     parsed: ParsedEligibility
     profile: SyntheticProfile
 
+class TrialRankingInput(BaseModel):
+    study_nct_id: str = Field(min_length=1, max_length=64)
+    source_url: str | None = None
+    eligibility_text: str = Field(min_length=1, max_length=50000)
+    profiles: list[SyntheticProfile] = Field(min_length=1, max_length=100)
+    evaluation_date: datetime | None = None
+
+def _attach_llm_suggestions(parsed: ParsedEligibility, source_text: str) -> None:
+    suggestions = suggest_criterion_types(source_text) or []
+    by_source = {item.get('source_text'): item.get('category') for item in suggestions}
+    # Require verbatim source text; hints are displayed to reviewers but never drive state evaluation.
+    for criterion in parsed.criteria:
+        category = by_source.get(criterion.original_text)
+        if category:
+            criterion.llm_category_suggestion = category
+            parsed.llm_suggestions.append({'source_text': criterion.original_text, 'category': category, 'logic': next((x.get('logic') for x in suggestions if x.get('source_text') == criterion.original_text), 'unknown')})
+    parsed.parser = 'llm_structured_output' if parsed.llm_suggestions else 'deterministic'
+
 
 @app.get("/health")
 def health():
@@ -83,11 +106,36 @@ def parse_eligibility(payload: EligibilityParseInput):
     validate it against ParsedEligibility, and retain original_text for every rule.
     The fallback is intentionally conservative and flags ambiguous wording.
     """
-    return parse_deterministic(payload.study_id, payload.original_eligibility_text)
+    parsed = parse_deterministic(payload.study_id, payload.original_eligibility_text)
+    if os.getenv('OPENAI_API_KEY'):
+        try:
+            _attach_llm_suggestions(parsed, payload.original_eligibility_text)
+        except Exception:
+            parsed.parser = 'deterministic'
+    return parsed
 
 @app.post('/eligibility/match', response_model=ParsedMatch)
 def match_eligibility(payload: ParsedMatchInput):
     return match_parsed_eligibility(payload.parsed, payload.profile)
+
+@app.post('/eligibility/rank', response_model=list[ParsedMatch])
+def rank_eligibility(payload: TrialRankingInput):
+    parsed = parse_deterministic(payload.study_nct_id, payload.eligibility_text)
+    if os.getenv('OPENAI_API_KEY'):
+        try:
+            _attach_llm_suggestions(parsed, payload.eligibility_text)
+        except Exception:
+            pass
+    results = rank_profiles(parsed, payload.profiles, payload.source_url, payload.evaluation_date.date() if payload.evaluation_date else None)
+    if os.getenv('OPENAI_API_KEY'):
+        for result in results:
+            result.parser = parsed.parser
+            result.llm_suggestions = parsed.llm_suggestions
+            try:
+                result.llm_explanation = summarize_match(result.model_dump())
+            except Exception:
+                result.llm_explanation = None
+    return results
 
 
 @app.post("/trials", status_code=status.HTTP_201_CREATED)
