@@ -1,5 +1,5 @@
 /* Public homepage navigation, FAQ, and dedicated About page */
-.public-site-header{height:78px;padding:0 clamp(22px,5vw,76px);background:#071b72;color:#fff;border:0;box-shadow:0 4px 18px #06144a1a}
+.public-site-header{height:78px;padding:0 clamp(22px,5vw,76px);background:#082749;color:#fff;border:0;box-shadow:0 4px 18px #061b36aa}
 .public-site-header .brand{color:#fff;font-size:1.28rem;letter-spacing:-.03em}
 .public-site-header .logo{background:#ffffff1c;color:#fff}
 .public-site-header nav{gap:clamp(18px,2.5vw,38px)}
