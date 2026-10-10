@@ -13,6 +13,7 @@ from firebase_admin import auth, credentials, firestore
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from .eligibility_parser import ParsedEligibility, parse_deterministic
+from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility
 
 app = FastAPI(title="Vitra API", version="0.1.0")
 app.add_middleware(
@@ -65,6 +66,10 @@ class EligibilityParseInput(BaseModel):
     study_id: str = Field(min_length=1, max_length=64)
     original_eligibility_text: str = Field(max_length=50000)
 
+class ParsedMatchInput(BaseModel):
+    parsed: ParsedEligibility
+    profile: SyntheticProfile
+
 
 @app.get("/health")
 def health():
@@ -79,6 +84,10 @@ def parse_eligibility(payload: EligibilityParseInput):
     The fallback is intentionally conservative and flags ambiguous wording.
     """
     return parse_deterministic(payload.study_id, payload.original_eligibility_text)
+
+@app.post('/eligibility/match', response_model=ParsedMatch)
+def match_eligibility(payload: ParsedMatchInput):
+    return match_parsed_eligibility(payload.parsed, payload.profile)
 
 
 @app.post("/trials", status_code=status.HTTP_201_CREATED)
