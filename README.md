@@ -17,7 +17,9 @@ Full-stack hackathon prototype: React/Vite frontend, Firebase Authentication and
 
 ## Run locally
 
-Frontend:
+Install backend dependencies first: `python -m pip install -r backend/requirements.txt`. Configure the private key in `backend/.env`.
+
+Start the website and backend together from the repository root:
 
 ```bash
 npm install
@@ -25,7 +27,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Backend (Python 3.11+):
+`npm run dev` checks backend health, starts Python if needed, and starts Vite with a same-origin `/api` proxy. Keep that terminal open. In PowerShell use `npm.cmd run dev`. An existing backend on port 8000 is reused. `npm run dev:frontend` starts only Vite. For deployed builds configure `VITE_API_URL` to your deployed backend.
+
+Optional separate backend (Python 3.11+):
 
 ```bash
 cd backend

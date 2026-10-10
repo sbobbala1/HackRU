@@ -42,18 +42,26 @@ class QuestionTests(unittest.TestCase):
             def responses(self): return self
             def create(self,**kw):
                 outer.request=kw
-                return SimpleNamespace(output_text=json.dumps(data))
+                catalog=json.loads(kw['input'][1]['content'])['source_catalog']
+                output=json.loads(json.dumps(data))
+                for claim in output.get('claims', []):
+                    if 'sources' in claim:
+                        claim['source_ids']=[next((i for i, source in catalog.items() if source['path']==item['path'] and source['quote']==item['quote']), 'INVALID') for item in claim.pop('sources')]
+                return SimpleNamespace(output_text=json.dumps(output))
         return Client()
     def test_arbitrary_question_reaches_ai_with_full_record(self):
         client=self.client({'status':'supported','message':'ignored','claims':[{'text':'The study lists 4 visits.','sources':[self.source]}]})
         result=answer_trial_question('NCT00000001','Tell me about the appointments please',client=client,record=self.record)
         self.assertIn('Tell me about the appointments please',self.request['input'][1]['content'])
         self.assertIn('A questionnaire is completed.',self.request['input'][1]['content'])
-        self.assertEqual(result['claims'][0]['source_ids'],['S1'])
+        self.assertEqual(result['citations'][0]['quote'], 'Participants attend 4 visits.')
+        self.assertEqual(result['claims'][0]['source_ids'], [result['citations'][0]['id']])
     def test_fabricated_citation_or_quantity_rejected(self):
         for source,text in [(dict(self.source,quote='Invented'), '4 visits'),(self.source,'8 visits')]:
-            with self.assertRaises(ValueError):
-                answer_trial_question('NCT00000001','How many visits?',client=self.client({'status':'supported','message':'','claims':[{'text':text,'sources':[source]}]}),record=self.record)
+            result=answer_trial_question('NCT00000001','How many visits?',client=self.client({'status':'supported','message':'','claims':[{'text':text,'sources':[source]}]}),record=self.record)
+            self.assertEqual(result['method'], 'Original study excerpts')
+            self.assertNotIn('8 visits', str(result))
+            self.assertNotIn('Invented', str(result))
     def test_missing_and_advice_do_not_display_model_facts(self):
         for state in ('missing','advice'):
             result=answer_trial_question('NCT00000001','Will I get paid?',client=self.client({'status':state,'message':'You get $1000 and should join','claims':[]}),record=self.record)
@@ -64,3 +72,32 @@ class QuestionTests(unittest.TestCase):
     def test_unsupported_language(self):
         result=answer_trial_question('NCT00000001','Question','es',client=object(),record=self.record)
         self.assertIn('English',result['answer'])
+
+    def test_provider_failure_returns_real_record_excerpts(self):
+        result=answer_trial_question('NCT00000001','What would I need to do during the study?',client=object(),record=self.record)
+        self.assertEqual(result['status'], 'supported')
+        self.assertIn('A questionnaire is completed.', str(result['claims']))
+        fields=source_fields(self.record)
+        for citation in result['citations']:
+            self.assertIn(citation['quote'], fields[citation['path']])
+
+    def test_bad_json_and_invalid_source_ids_return_excerpts(self):
+        result=answer_trial_question('NCT00000001','Explain this study',client=self.client({'status':'supported','claims':[{'text':'Made up', 'source_ids':['NONEXISTENT']}]}),record=self.record)
+        self.assertEqual(result['method'], 'Original study excerpts')
+        self.assertNotIn('Made up', str(result))
+
+    def test_source_fallback_does_not_invent_results_or_risks(self):
+        for question in ['What were the results?', 'What risks are listed?', 'What compensation is offered?']:
+            result=answer_trial_question('NCT00000001',question,client=object(),record=self.record)
+            self.assertEqual(result['status'], 'missing')
+            self.assertEqual(result['claims'], [])
+
+    def test_actual_results_are_available_to_ai(self):
+        self.record['resultsSection']={'participantFlowModule':{'preAssignmentDetails':'Four participants completed the study.'}}
+        result=answer_trial_question('NCT00000001','What are the results?',client=object(),record=self.record)
+        self.assertIn('Four participants completed', str(result['claims']))
+        self.assertTrue(result['citations'][0]['path'].startswith('resultsSection.'))
+
+    def test_wrong_study_is_never_used_as_fallback(self):
+        with self.assertRaises(ValueError):
+            answer_trial_question('NCT00000002','Explain this study',client=object(),record=self.record)

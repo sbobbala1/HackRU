@@ -22,7 +22,7 @@ from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eli
 from .llm_assist import suggest_criterion_types, summarize_match
 from .trial_explainer import answer_trial_question
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 
 app = FastAPI(title="Vitra API", version="0.1.0")
 
@@ -163,7 +163,7 @@ def parse_eligibility(payload: EligibilityParseInput):
     The fallback is intentionally conservative and flags ambiguous wording.
     """
     parsed = parse_deterministic(payload.study_id, payload.original_eligibility_text)
-    if os.getenv('OPENAI_API_KEY'):
+    if os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY'):
         try:
             _attach_llm_suggestions(parsed, payload.original_eligibility_text)
         except Exception:
@@ -177,13 +177,13 @@ def match_eligibility(payload: ParsedMatchInput):
 @app.post('/eligibility/rank', response_model=list[ParsedMatch])
 def rank_eligibility(payload: TrialRankingInput):
     parsed = parse_deterministic(payload.study_nct_id, payload.eligibility_text)
-    if os.getenv('OPENAI_API_KEY'):
+    if os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY'):
         try:
             _attach_llm_suggestions(parsed, payload.eligibility_text)
         except Exception:
             pass
     results = rank_profiles(parsed, payload.profiles, payload.source_url, payload.evaluation_date.date() if payload.evaluation_date else None)
-    if os.getenv('OPENAI_API_KEY'):
+    if os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY'):
         for result in results:
             result.parser = parsed.parser
             result.llm_suggestions = parsed.llm_suggestions
