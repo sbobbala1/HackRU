@@ -45,3 +45,10 @@ test('aggregates distinct criteria with the same text independently and ranks af
   assert.equal(result[1].id, 'one');
   assert.equal(result[1].unknownRate, 1 / 3);
 });
+
+test('OR diagnosis alternative cannot treat missing knee-pain evidence as a conflict',()=>{
+  const criterion={op:'any_of',operands:[{field:'condition',op:'equals',value:'Osteoarthritis'},{field:'kneePain',op:'true'}]};
+  assert.equal(evaluateCriterion(criterion,{condition:'Asthma'}),'UNKNOWN');
+  assert.equal(evaluateCriterion(criterion,{condition:'Asthma',kneePain:true}),'MET');
+  assert.equal(evaluateCriterion(criterion,{condition:'Asthma',kneePain:false}),'NOT_MET');
+});

@@ -32,12 +32,17 @@ export const demoStudyCriteria = {
   ],
   'pm-103': [
     { id: 'age-min', text: 'Age 40 years or older', field: 'age', op: 'min', min: 40, category: 'inclusion' },
-    { id: 'diagnosis-or-pain', text: 'Osteoarthritis diagnosis or chronic knee pain', field: 'condition', op: 'equals', value: 'Osteoarthritis', category: 'inclusion' },
+    { id: 'diagnosis-or-pain', text: 'Osteoarthritis diagnosis or chronic knee pain', field: 'condition', op: 'any_of', operands: [{field:'condition',op:'equals',value:'Osteoarthritis'}, {field:'kneePain',op:'true'}], category: 'inclusion' },
     { id: 'questionnaire', text: 'Able to complete online questionnaires', field: 'questionnaire', op: 'true', category: 'exclusion' },
   ],
 };
 
 export function evaluateCriterion(criterion, profile) {
+  if (criterion.op === 'any_of') {
+    const states = criterion.operands.map(c => evaluateCriterion(c, profile));
+    return states.includes('MET') ? 'MET' : states.includes('UNKNOWN') ? 'UNKNOWN' : 'NOT_MET';
+  }
+  if (criterion.field === 'condition' && profile.diagnosisKnown === null) return 'UNKNOWN';
   const value = profile[criterion.field];
   if (value === null || value === undefined || value === '') return 'UNKNOWN';
   if (criterion.op === 'range') return value >= criterion.min && value <= criterion.max ? 'MET' : 'NOT_MET';

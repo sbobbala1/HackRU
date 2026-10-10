@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getClinicalTrial } from './services/clinicalTrials';
 import { api } from './services/api';
+import { criteriaText } from './services/demoMode';
 import { patients } from './ExplainableMatchDemo';
 import './researcher-dashboard.css';
 
@@ -9,16 +10,9 @@ const WORKFLOW = ['Potential Match', 'Needs Review', 'Invited', 'Interested', 'S
 const STORAGE_KEY = 'vitra-researcher-workflow-v1';
 
 function readWorkflow() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  try { const value=JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; }
   catch { return {}; }
-}
-function criteriaText(trial) {
-  let text = trial.eligibility || '';
-  if (!/\b(age|aged)\b/i.test(text)) {
-    const min = trial.minAge?.match(/\d+/)?.[0], max = trial.maxAge?.match(/\d+/)?.[0];
-    if (min || max) text += `\nInclusion Criteria:\n${min && max ? `Age ${min} to ${max} years.` : min ? `Age ${min} years or older.` : `Age ${max} years or younger.`}`;
-  }
-  return text;
 }
 function categoryState(outcome) {
   return outcome === 'Potential Match' ? 'Potential Match' : 'Needs Review';
@@ -58,7 +52,7 @@ export default function ResearcherRecruitmentDashboard({ Sidebar }) {
     } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(workflow)); }, [workflow]);
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(workflow)); } catch { setError('Browser storage is unavailable. Workflow changes cannot be saved.'); } }, [workflow]);
 
   const allRows = useMemo(() => studies.flatMap(trial => (rankings[trial.nctId] || []).map(result => {
     const profile = patients.find(p => p.profile_id === result.profile_id);
@@ -113,15 +107,15 @@ export default function ResearcherRecruitmentDashboard({ Sidebar }) {
     setWorkflow({});
   }
 
-  if (loading) return <div className="portal"><main className="portal-main"><div className="researcher-loading" role="status">Loading official study records and evaluating fictional profiles…</div></main></div>;
-  if (error) return <div className="portal"><main className="portal-main"><div className="page-head"><div><span className="eyebrow">Researcher workspace</span><h1>Recruitment dashboard</h1></div></div><div className="researcher-error" role="alert"><b>Dashboard data could not be loaded.</b><p>{error}</p><button className="btn" onClick={load}>Retry</button></div></main></div>;
+  if (loading) return <div className="portal"><Sidebar role="researcher"/><main className="portal-main"><div className="researcher-loading" role="status">Loading official study records and evaluating fictional profiles…</div></main></div>;
+  if (error) return <div className="portal"><Sidebar role="researcher"/><main className="portal-main"><div className="page-head"><div><span className="eyebrow">Researcher workspace</span><h1>Recruitment dashboard</h1></div></div><div className="researcher-error" role="alert"><b>Dashboard data could not be loaded.</b><p>{error}</p><button className="btn" onClick={load}>Retry</button></div></main></div>;
 
   return <div className="portal"><Sidebar role="researcher"/><main className="portal-main researcher-dashboard">
     <div className="page-head"><div><span className="eyebrow">Researcher workspace · live public studies + fictional candidates</span><h1>Recruitment dashboard</h1><p>Review source-linked studies, criterion-level matching evidence, and synthetic recruitment workflow activity.</p></div><div className="researcher-header-actions"><button className="btn secondary" onClick={() => setShowCompare(v => !v)}>{showCompare ? 'Hide trial comparison' : 'Compare trials'}</button><button className="btn secondary" onClick={resetWorkflow}>Reset demo workflow</button></div></div>
     <div className="notice"><span><b>Synthetic demo workspace.</b> Trial records are real public ClinicalTrials.gov records; every patient profile and workflow action is fictional and stored in this browser. No candidate is declared eligible. No one is contacted and no medical information is sent externally.</span></div>
     <section className="researcher-study-overview">
       <div className="researcher-study-picker"><label>Study<select aria-label="Trial filter" value={trialFilter} onChange={e => { setTrialFilter(e.target.value); setSelectedKey(''); }}><option value="all">All three official studies</option>{studies.map(t => <option key={t.nctId} value={t.nctId}>{t.nctId} · {t.title}</option>)}</select></label>
-      {selectedTrial && <><span className="researcher-study-status">{selectedTrial.status.replaceAll('_', ' ')}</span><h2>{selectedTrial.title}</h2><p><b>{selectedTrial.nctId}</b> · {selectedTrial.conditions.join(', ') || 'Condition not provided'}</p><p>{selectedTrial.summary}</p><a href={selectedTrial.studyUrl} target="_blank" rel="noreferrer">Open official ClinicalTrials.gov record ↗</a><details><summary>Eligibility criteria from the source</summary><pre>{selectedTrial.eligibility || 'Eligibility text not provided in the source.'}</pre></details></>}
+      {selectedTrial && <><span className="researcher-study-status">{selectedTrial.status.replaceAll('_', ' ')}</span><h2>{selectedTrial.title}</h2><p><b>{selectedTrial.nctId}</b> · {selectedTrial.source} · {selectedTrial.retrievedAt} · {selectedTrial.conditions.join(', ') || 'Condition not provided'}</p><p>{selectedTrial.summary}</p><a href={selectedTrial.studyUrl} target="_blank" rel="noreferrer">Open official ClinicalTrials.gov record ↗</a><details><summary>Eligibility criteria from the source</summary><pre>{selectedTrial.eligibility || 'Eligibility text not provided in the source.'}</pre></details></>}
       </div>
       <div className="researcher-summary-metrics"><article><span>Patient–study pairs ranked</span><b>{activeRows.length}</b><small>Derived from current study results</small></article><article><span>Known exclusion conflicts</span><b>{conflicts}</b><small>Candidate rows with NOT MET exclusion criteria</small></article><article><span>Missing-data barriers</span><b>{missingCandidates}</b><small>Candidates with one or more UNKNOWN criteria</small></article></div>
     </section>

@@ -116,6 +116,9 @@ def import_bundle(bundle, synthetic_attested=False, as_of=None):
         else:
             key = 'conditions' if kind == 'Condition' else 'procedures' if kind == 'Procedure' else 'medications'
             item['status'] = r.get('status') or concept(r.get('clinicalStatus'))[1]
+            if kind == 'Condition' and concept(r.get('verificationStatus'))[1] in ('refuted', 'entered-in-error', 'unconfirmed'):
+                item['status'] = 'unverified'
+                profile['warnings'].append(f'Entry {i}: unverified or refuted condition is unavailable for matching')
             item['status_source'] = source(i, r, 'status/clinicalStatus')
             profile[key].append(item)
     for obs in profile['observations']:
@@ -145,16 +148,13 @@ def match_normalized(parsed, profile):
             selected = max(candidates, key=lambda o: o['date'])
             labs.append(dict(name=c.requirement, value=selected['value'], unit=selected['unit'], date=selected['date'])); evidence[c.original_text] = selected
     conditions = [x['label'] for x in profile['conditions'] if x['status'] == 'active']
-    result = match_parsed_eligibility(parsed, SyntheticProfile(profile_id=profile['profile_id'], age=profile['age'], conditions=conditions, labs=labs), evaluation_date=day(profile['as_of']))
+    medications = [dict(name=x['label'], status='current' if x['status'] == 'active' else 'past' if x['status'] in ('completed', 'stopped') else 'unknown') for x in profile['medications']]
+    result = match_parsed_eligibility(parsed, SyntheticProfile(profile_id=profile['profile_id'], age=profile['age'], conditions=conditions, medications=medications, labs=labs), evaluation_date=day(profile['as_of']))
     rows = result.model_dump()
     for row in rows['criteria']:
         row['status'] = row['status'].replace(' ', '_')
-    compound_texts = {c.original_text for c in parsed.criteria if c.logic in ('AND','OR','unknown')}
     for row in rows['criteria']:
-        if row['original_text'] in compound_texts:
-            row.update(status='UNKNOWN', explanation='Compound logic requires manual review.', manual_review=True)
-    for row in rows['criteria']:
-        row['provenance'] = [evidence[row['original_text']]] if row['original_text'] in evidence else [profile['age_source']] if row['criterion_type']=='age' else profile['conditions'] if row['criterion_type']=='diagnosis' else []
+        row['provenance'] = [evidence[row['original_text']]] if row['original_text'] in evidence else [profile['age_source']] if row['criterion_type']=='age' else profile['conditions'] if row['criterion_type']=='diagnosis' else profile['medications'] if row['criterion_type']=='medication' else []
     rows['counts'] = {s:sum(r['status']==s for r in rows['criteria']) for s in ('MET','NOT_MET','UNKNOWN')}
     rows['outcome'] = 'Potentially Ineligible' if rows['counts']['NOT_MET'] else 'Needs More Information' if rows['counts']['UNKNOWN'] or not rows['criteria'] else 'Potential Match'
     return rows

@@ -52,9 +52,9 @@ class SyntheticTests(unittest.TestCase):
     def test_shorter_time_window(self):
         parsed=parse_deterministic('DEMO','Inclusion Criteria:\nHbA1c >= 7.0% within 2 days.')
         self.assertEqual(match_normalized(parsed,self.profile())['criteria'][0]['status'],'UNKNOWN')
-    def test_compound_diagnosis_is_unknown(self):
+    def test_supported_compound_diagnosis_preserves_or_logic(self):
         parsed=parse_deterministic('DEMO','Inclusion Criteria:\nDiagnosis of type 2 diabetes or asthma.')
-        self.assertEqual(match_normalized(parsed,self.profile())['outcome'],'Needs More Information')
+        self.assertEqual(match_normalized(parsed,self.profile())['outcome'],'Potential Match')
     def test_medication_reference(self):
         b=copy.deepcopy(self.bundle)
         b['entry'].append({'fullUrl':'urn:uuid:med','resource':{'resourceType':'Medication','id':'med','code':{'text':'Metformin'}}})
