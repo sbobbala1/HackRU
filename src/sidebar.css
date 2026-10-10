@@ -1,0 +1,26 @@
+.side{padding:22px 12px 14px}
+.side-top{padding:0 10px 22px;border-bottom:1px solid var(--line)}
+.side-top .brand{font-size:1.22rem}
+.side-product{display:block;margin:7px 0 0 40px;color:#80949f;font-size:.58rem;font-weight:800;letter-spacing:.14em}
+.workspace-switch{display:flex;align-items:center;gap:9px;padding:14px 10px;margin:14px 0 6px;border:1px solid var(--line);border-radius:10px;background:#fbfdfe}
+.workspace-switch small,.workspace-switch b{display:block}
+.workspace-switch small{color:#7e929d;font-size:.65rem;margin-bottom:2px}
+.workspace-switch b{font-size:.8rem;color:var(--navy)}
+.workspace-dot,.demo-user-avatar{display:grid;place-items:center;flex:0 0 auto;width:28px;height:28px;border-radius:8px;background:#e1f4f2;color:#087d75;font-size:.7rem;font-weight:800}
+.side-nav{display:grid;gap:2px}
+.side-nav .role-label{margin:17px 10px 7px}
+.side-nav button{width:100%;display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:8px;background:transparent;color:#5f7481;text-align:left;font-size:.84rem}
+.side-nav button:hover,.side-nav button.active{background:#eaf7f6;color:#087e75;font-weight:700}
+.side-nav-mark{width:6px;height:6px;border:1px solid #9eb0b9;border-radius:50%;flex:0 0 auto}
+.side-nav button.active .side-nav-mark{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 3px #d7f0ed}
+.side-bottom{padding:12px 0 0}
+.side-account-wrap{position:relative}
+.side-account{width:100%;display:flex;align-items:center;gap:9px;padding:9px 8px;background:transparent;border-radius:9px;text-align:left}
+.side-account:hover{background:#f2f8fa}
+.side-account b,.side-account small{display:block}
+.side-account b{font-size:.76rem;color:var(--navy)}
+.side-account small{font-size:.67rem}
+.account-caret{margin-left:auto;color:#7d919c;font-size:1rem}
+.account-menu{position:absolute;bottom:calc(100% + 7px);left:0;right:0;padding:5px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);z-index:8}
+.account-menu button{display:block;width:100%;padding:8px;background:transparent;border-radius:6px;text-align:left;color:#4f6976;font-size:.75rem}
+.account-menu button:hover{background:#eff7fa;color:var(--navy)}
