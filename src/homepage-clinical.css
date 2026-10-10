@@ -1,0 +1,7 @@
+/* Clinical laboratory hero variant for the Vitra homepage. */
+.home-hero{background-image:linear-gradient(90deg,#06182feF 0%,#082648e7 35%,#0b315689 56%,#071a3417 100%),url('./assets/vitra-clinical-lab-hero.png');background-position:center;background-size:cover}
+.home-hero h1{font-size:0;line-height:1;max-width:720px}
+.home-hero h1::after{content:'Connecting Trials to Possibility';display:block;color:#fff;font-family:Fraunces,serif;font-size:clamp(3.45rem,5.25vw,5.7rem);line-height:1.02;letter-spacing:-.055em}
+.home-hero-copy>p{max-width:570px}.home-kicker{margin-bottom:13px}
+.home-kicker{font-size:0}.home-kicker::after{content:'Vitra · Trial discovery';font-size:.73rem}.home-proof span{font-size:0}.home-proof span::after{content:'Clinical research, made clearer';font-size:.65rem}
+@media(max-width:630px){.home-hero{background-image:linear-gradient(180deg,#06182ff2 0%,#082648e2 60%,#06182fbd 100%),url('./assets/vitra-clinical-lab-hero.png');background-position:64% center}.home-hero h1::after{font-size:2.95rem}}
