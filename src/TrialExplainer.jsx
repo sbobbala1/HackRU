@@ -11,6 +11,7 @@ function Answer({answer, title}) {
   const citations=answer.citations || [];
   return <article className="explainer-answer">
     <h3>{title}</h3>
+    {answer.notice && <p className="explainer-help">{answer.notice}</p>}
     {answer.status!=='supported' && <p>{answer.answer}</p>}
     {(answer.claims || []).map((claim,i)=><p key={i}>{claim.text} <span className="explainer-citation-links">{claim.source_ids.map(id=><a key={id} href={'#'+title.replace(/\W/g,'')+'-'+id} aria-label={`Read source ${id}`} onClick={()=>{const source=document.getElementById(title.replace(/\W/g,'')+'-'+id);if(source?.parentElement?.tagName==='DETAILS')source.parentElement.open=true;}}>[{id}]</a>)}</span></p>)}
     {citations.length>0 && <details className="explainer-sources"><summary>View original sources ({citations.length})</summary>{citations.map(source=><article id={title.replace(/\W/g,'')+'-'+source.id} key={source.id}><b>[{source.id}] {fieldName(source.path)}</b><blockquote>{source.quote}</blockquote><details><summary>Source field</summary><small>{source.path}</small></details><a href={source.url} target="_blank" rel="noopener noreferrer">Official record</a></article>)}</details>}
