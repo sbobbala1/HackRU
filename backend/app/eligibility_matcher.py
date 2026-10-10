@@ -42,14 +42,14 @@ def match_parsed_eligibility(parsed: ParsedEligibility, profile: SyntheticProfil
         topics = [x for x in ('type 2 diabetes', 'asthma', 'osteoarthritis', 'cancer') if x in text]
         if not topics: rows.append(MatchRow(original_text=c.original_text, criterion_type='diagnosis', status='UNKNOWN', profile_evidence=', '.join(profile.conditions) or 'Conditions not provided', explanation='The diagnosis wording needs manual review.', manual_review=True))
         elif any(t in known for t in topics): rows.append(MatchRow(original_text=c.original_text, criterion_type='diagnosis', status='MET', profile_evidence=', '.join(profile.conditions), explanation='The explicitly named condition appears in the synthetic profile.'))
-        else: rows.append(MatchRow(original_text=c.original_text, criterion_type='diagnosis', status='NOT_MET', profile_evidence=', '.join(profile.conditions) or 'Conditions not provided', explanation='The explicitly named condition is not in the supplied profile.'))
+        else: rows.append(MatchRow(original_text=c.original_text, criterion_type='diagnosis', status='UNKNOWN', profile_evidence=', '.join(profile.conditions) or 'Conditions not provided', explanation='Absence from an incomplete condition list does not establish absence of a diagnosis.'))
     for c in parsed.laboratory_thresholds:
         key = (c.requirement or '').replace(' ', '').lower(); values = {k.replace(' ', '').lower(): v for k, v in (profile.labs or {}).items()}
         value = values.get(key)
         if value is None: rows.append(MatchRow(original_text=c.original_text, criterion_type='laboratory', status='UNKNOWN', profile_evidence='Compatible result not provided', explanation='No compatible supplied laboratory result.', manual_review=True))
         else:
-            met = value >= c.value if c.operator == '>=' else value <= c.value if c.operator == '<=' else False
-            rows.append(MatchRow(original_text=c.original_text, criterion_type='laboratory', status='MET' if met else 'NOT_MET', profile_evidence=f'{c.requirement}: {value} {c.unit or ""}', explanation='Value satisfies the supported threshold.' if met else 'Value conflicts with the supported threshold.', manual_review=c.operator == 'between'))
+            met = value >= c.value if c.operator == '>=' else value <= c.value if c.operator == '<=' else None
+            rows.append(MatchRow(original_text=c.original_text, criterion_type='laboratory', status='UNKNOWN' if met is None else 'MET' if met else 'NOT_MET', profile_evidence=f'{c.requirement}: {value} {c.unit or ""}', explanation='Unsupported threshold requires review.' if met is None else 'Value satisfies the supported threshold.' if met else 'Value conflicts with the supported threshold.', manual_review=met is None))
     for c in [*parsed.inclusion_criteria, *parsed.exclusion_criteria]:
         if c.needs_manual_review and c.category not in ('age',): rows.append(MatchRow(original_text=c.original_text, criterion_type=c.category, status='UNKNOWN', profile_evidence='No deterministic evaluation', explanation='This criterion needs manual review; no assumption was made.', manual_review=True))
     counts = {s: sum(r.status == s for r in rows) for s in ('MET','NOT_MET','UNKNOWN')}

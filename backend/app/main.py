@@ -14,8 +14,37 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from .eligibility_parser import ParsedEligibility, parse_deterministic
 from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility
+from .synthetic_patients import import_bundle, match_normalized
+from pathlib import Path
+import json
 
 app = FastAPI(title="Vitra API", version="0.1.0")
+
+class SyntheticImportInput(BaseModel):
+    bundle: dict
+    synthetic_attested: bool = False
+
+class SyntheticMatchInput(SyntheticImportInput):
+    parsed: ParsedEligibility
+
+@app.get('/synthetic/patients/demo')
+def demo_patients():
+    bundles = json.loads((Path(__file__).parent / 'data' / 'synthetic_demo.json').read_text())
+    return {'profiles': [import_bundle(b, True) for b in bundles], 'bundles': bundles}
+
+@app.post('/synthetic/patients/import')
+def import_patient(payload: SyntheticImportInput):
+    try:
+        return import_bundle(payload.bundle, payload.synthetic_attested)
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(422, 'Invalid synthetic FHIR Bundle: ' + str(exc)) from exc
+
+@app.post('/synthetic/patients/match')
+def match_imported_patient(payload: SyntheticMatchInput):
+    try:
+        return match_normalized(payload.parsed, import_bundle(payload.bundle, payload.synthetic_attested))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(422, 'Invalid synthetic FHIR Bundle: ' + str(exc)) from exc
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # replace/add Hosting domain in production
