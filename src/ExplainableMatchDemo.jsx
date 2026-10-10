@@ -18,41 +18,13 @@ export const patients = [
   {profile_id:'SYN-012',demo_consent:false,age:55,conditions:['Asthma'],conditions_complete:true,medications:[{name:'Corticosteroid',status:'past',end_date:'2026-01-01'}],medications_complete:true,labs:[],facts:{}},
 ];
 
-const researcherNavigation = [
-  ['Overview', '/researcher/dashboard'],
-  ['My trials', '/researcher/trials'],
-  ['Create trial', '/researcher/trials/new'],
-  ['Eligibility parser', '/researcher/parser'],
-  ['Potential matches', '/researcher/trials/pm-101/matches'],
-  ['Recruitment analytics', '/researcher/analytics'],
-  ['Profile & settings', '/researcher/settings'],
-];
-
-function navigate(path) {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-}
-
-function ResearcherSidebar() {
-  const currentPath = window.location.pathname;
-  return <aside className="side">
-    <div className="side-top"><a className="brand" onClick={() => navigate('/')}>Vitra</a><span className="side-product">TRIAL DISCOVERY</span></div>
-    <div className="workspace-switch"><span className="workspace-dot">R</span><div><small>Synthetic demo workspace</small><b>Researcher</b></div></div>
-    <nav className="side-nav" aria-label="Researcher workspace navigation">
-      <div className="role-label">RESEARCHER WORKSPACE</div>
-      {researcherNavigation.map(([label, path]) => <button key={path} className={currentPath === path ? 'active' : ''} onClick={() => navigate(path)}><span className="side-nav-mark"/>{label}</button>)}
-    </nav>
-    <div className="side-bottom">Synthetic demo data only</div>
-  </aside>
-}
-
-export default function ExplainableMatchDemo(){
+export default function ExplainableMatchDemo({Sidebar}){
   const [studies,setStudies]=useState([]),[studyId,setStudyId]=useState(STUDIES[0]),[results,setResults]=useState([]),[selected,setSelected]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
   useEffect(()=>{let live=true;Promise.all(STUDIES.map(id=>getClinicalTrial(id))).then(rows=>{if(live){setStudies(rows);setError('')}}).catch(e=>{if(live)setError(`Unable to load official ClinicalTrials.gov records: ${e.message}`)});return()=>{live=false}},[]);
   const study=useMemo(()=>studies.find(s=>s.nctId===studyId),[studies,studyId]);
   async function run(){if(!study?.eligibility||study.eligibility==='Not provided in the source'){setError('This source record has no eligibility text to compare.');return}setLoading(true);setError('');setResults([]);setSelected(null);try{let criteria=study.eligibility;if(!/\b(age|aged)\b/i.test(criteria)){const min=study.minAge?.match(/\d+/)?.[0],max=study.maxAge?.match(/\d+/)?.[0];if(min||max){criteria+=`\nInclusion Criteria:\n${min&&max?`Age ${min} to ${max} years.`:min?`Age ${min} years or older.`:`Age ${max} years or younger.`}`}}const rows=await api.rankEligibility(study.nctId,study.studyUrl,criteria,patients);setResults(rows);setSelected(rows[0]?.profile_id||null)}catch(e){setError(`${e.message} Confirm the Vitra API is running.`)}finally{setLoading(false)}}
   const active=results.find(x=>x.profile_id===selected);
-  return <div className="portal"><ResearcherSidebar/>
+  return <div className="portal"><Sidebar role="researcher"/>
     <main className="portal-main"><div className="page-head"><div><span className="eyebrow">Researcher workspace · deterministic rules engine</span><h1>Explainable trial matching</h1><p>Compare 12 synthetic profiles against three real ClinicalTrials.gov records. Each criterion stays visible as MET, NOT MET, or UNKNOWN.</p></div></div>
       <div className="notice"><span><b>Review support only:</b> ranking is an ordinal prioritization heuristic, not a probability of eligibility. No candidate is declared eligible for enrollment.</span></div>
       <section className="match-demo-controls"><label>Official study record<select value={studyId} onChange={e=>setStudyId(e.target.value)}>{STUDIES.map(id=><option key={id} value={id}>{id}{studies.find(s=>s.nctId===id)?` · ${studies.find(s=>s.nctId===id).title}`:''}</option>)}</select></label><button className="btn" onClick={run} disabled={loading||!study}>{loading?'Evaluating criteria…':'Compare all 12 synthetic profiles'}</button>{study&&<p className="source-link">Source: <a href={study.studyUrl} target="_blank" rel="noreferrer">ClinicalTrials.gov · {study.nctId} ↗</a></p>}</section>

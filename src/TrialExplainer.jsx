@@ -1,47 +1,71 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {getClinicalTrial,searchClinicalTrials} from './services/clinicalTrials';
-import {explainTrial,sampleQuestions} from './services/trialExplainer';
+import {getClinicalTrial, searchClinicalTrials} from './services/clinicalTrials';
+import {sampleQuestions} from './services/trialExplainer';
 import {api} from './services/api';
 import './trial-explainer.css';
 
+const OVERVIEW = 'Explain this study in plain English: its purpose, study design, participation activities, and eligibility requirements. Clearly identify any missing information.';
+const fieldName = path => path.includes('eligibilityModule') ? 'Participation requirements' : path.includes('descriptionModule') ? 'Study description' : path.includes('armsInterventionsModule') ? 'Study activities' : path.includes('designModule') ? 'Study design' : path.includes('outcomesModule') ? 'Study outcomes' : 'Official study record';
+
+function Answer({answer, title}) {
+  const citations=answer.citations || [];
+  return <article className="explainer-answer">
+    <h3>{title}</h3>
+    {answer.status!=='supported' && <p>{answer.answer}</p>}
+    {(answer.claims || []).map((claim,i)=><p key={i}>{claim.text} <span className="explainer-citation-links">{claim.source_ids.map(id=><a key={id} href={'#'+title.replace(/\W/g,'')+'-'+id} aria-label={`Read source ${id}`} onClick={()=>{const source=document.getElementById(title.replace(/\W/g,'')+'-'+id);if(source?.parentElement?.tagName==='DETAILS')source.parentElement.open=true;}}>[{id}]</a>)}</span></p>)}
+    {citations.length>0 && <details className="explainer-sources"><summary>View original sources ({citations.length})</summary>{citations.map(source=><article id={title.replace(/\W/g,'')+'-'+source.id} key={source.id}><b>[{source.id}] {fieldName(source.path)}</b><blockquote>{source.quote}</blockquote><details><summary>Source field</summary><small>{source.path}</small></details><a href={source.url} target="_blank" rel="noopener noreferrer">Official record</a></article>)}</details>}
+  </article>;
+}
+
 export default function TrialExplainer({Sidebar, role='patient'}) {
-  const [query,setQuery]=useState(''),[results,setResults]=useState([]),[trial,setTrial]=useState(null),[question,setQuestion]=useState(''),[answer,setAnswer]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[language,setLanguage]=useState('en');
-  const generation=useRef(0); const answerRef=useRef(null);
-  const overviewQuestion = 'Explain this study in plain English: its purpose, study design, participation activities, and eligibility requirements. Clearly identify any missing information.';
-  async function requestAnswer(data, q, version) {
-    setQuestion(q); setAnswer(null);
+  const [query,setQuery]=useState(''),[results,setResults]=useState([]),[trial,setTrial]=useState(null),[question,setQuestion]=useState('');
+  const [overview,setOverview]=useState(null),[reply,setReply]=useState(null),[phase,setPhase]=useState(''),[error,setError]=useState(''),[retry,setRetry]=useState(null),[searched,setSearched]=useState(false);
+  const generation=useRef(0), controller=useRef(null);
+  const busy=Boolean(phase);
+  function begin(nextPhase) {controller.current?.abort();controller.current=new AbortController();const version=++generation.current;setPhase(nextPhase);setError('');setRetry(null);return {version,signal:controller.current.signal};}
+  function current(version){return version===generation.current;}
+  useEffect(()=>()=>{generation.current++;controller.current?.abort();},[]);
+  async function generate(data,q,kind,request) {
     try {
-      const response = await api.explainTrial(data.nctId,q,language);
-      if(version===generation.current) setAnswer({question:q,guidance:'This explains the public study record. Official screening is required. It is not treatment advice.',...response});
-    } catch(e) {
-      if(version===generation.current) {
-        setError(e.message + ' No AI answer was generated.');
-        const fallback=explainTrial(data,q,language);
-        if(fallback.citations.length) setAnswer({...fallback,method:'Original source excerpts only: AI request failed'});
-      }
-    }
+      const result=await api.explainTrial(data.nctId,q,'en',request.signal);
+      if(current(request.version)) {if(kind==='overview')setOverview(result);else setReply({question:q,...result});}
+    } catch(e) {if(current(request.version)){setError(e.message);setRetry({data,q,kind});}}
+    finally {if(current(request.version))setPhase('');}
   }
   async function select(id) {
-    const version=++generation.current;setBusy(true);setError('');setTrial(null);setAnswer(null);
+    const request=begin('study');setOverview(null);setReply(null);setQuestion('');
     try {
       const data=await getClinicalTrial(id);
-      if(version!==generation.current)return;
-      setTrial(data);setQuery(data.nctId);setResults([]);
-      await requestAnswer(data,overviewQuestion,version);
-    } catch(e){if(version===generation.current)setError(e.message);}
-    finally{if(version===generation.current)setBusy(false);}
+      if(!current(request.version))return;
+      setTrial(data);setResults([]);setQuery('');setPhase('overview');
+      await generate(data,OVERVIEW,'overview',request);
+    } catch(e){if(current(request.version)){setError(e.message);setRetry({id});setPhase('');}}
   }
   useEffect(()=>{const id=new URLSearchParams(location.search).get('trial');if(id)select(id);},[]);
-  async function search(e){e.preventDefault();if(/^NCT\d{8}$/i.test(query.trim()))return select(query.trim().toUpperCase());const version=++generation.current;setBusy(true);setError('');setAnswer(null);try{const data=await searchClinicalTrials({query,pageSize:5});if(version===generation.current){setResults(data.studies);if(!data.studies.length)setError('No studies found. Try a broader search.');}}catch(e){if(version===generation.current)setError(e.message);}finally{if(version===generation.current)setBusy(false);}}
-  async function ask(q=question){if(!trial || !q.trim())return;const version=++generation.current;setBusy(true);setError('');try{await requestAnswer(trial,q,version);}finally{if(version===generation.current)setBusy(false);}}
-  useEffect(()=>{if(answer)answerRef.current?.focus();answerRef.current?.scrollIntoView({block:'start'});},[answer]);
-  return <div className="portal"><Sidebar role={role}/><main className="portal-main explainer-page"><div className="page-head"><div><span className="eyebrow">{role==='researcher'?'Doctor / researcher workspace':'Patient workspace'}</span><h1>Trial explainer</h1><p>Understand a real study using its public record and trace every answer to its source.</p></div></div>
-    <form onSubmit={search} className="explainer-search"><label htmlFor="trial-search">Find a study by condition, keyword, or NCT ID</label><div><input id="trial-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Example: diabetes or NCT01234567" required/><button className="btn primary" disabled={busy}>Find study</button></div></form>
-    {error&&<p role="alert" className="form-error">{error}</p>}{busy&&<p role="status">Reading the selected study and preparing an answer…</p>}
-    {results.length>0&&<section aria-label="Study search results">{results.map(t=><article className="explainer-result" key={t.nctId}><h2>{t.title}</h2><p>{t.nctId} · {t.status}</p><button className="btn secondary" disabled={busy} onClick={()=>select(t.nctId)}>Explain this study</button></article>)}</section>}
-    {!trial&&!busy&&<p>Select a real study to start. Fictional demo trials are not used by this explainer.</p>}
-    {trial&&<><section className="explainer-record"><h2>{trial.title}</h2><p>{trial.nctId} · {trial.status}</p><a href={trial.studyUrl} target="_blank" rel="noopener noreferrer">Official ClinicalTrials.gov record</a><p>Retrieved {new Date(trial.retrievedAt).toLocaleString()}</p></section>
-    <section><h2>Ask about this study</h2><p>English is supported. Other languages and automatic translation are not available in this demo.</p><label>Answer language<select value={language} onChange={e=>{setLanguage(e.target.value);setAnswer(null);generation.current++;setBusy(false);}}><option value="en">English</option><option value="unsupported">Other language, unavailable</option></select></label><p>AI reads the selected official trial record to answer your question. Your question and the public record are sent to AI; profiles are not attached. Do not enter real medical records. Verify AI wording against the cited original excerpts.</p><div className="explainer-samples">{sampleQuestions.map(q=><button key={q} className="btn secondary" disabled={busy} onClick={()=>ask(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();ask();}}><label htmlFor="trial-question">Your question</label><textarea id="trial-question" value={question} onChange={e=>setQuestion(e.target.value)} maxLength={2000} required/><button className="btn primary" disabled={busy}>Ask question</button></form></section>
-    {answer&&<section className="explainer-answer" ref={answerRef} tabIndex={-1} aria-label="Study answer"><h2>{answer.question}</h2><p className="eyebrow">{answer.method}</p><p>{answer.answer}</p>{answer.simplifications?.map(x=><p key={x.id}>{x.text} <a href={'#source-'+x.id}>[{x.id}]</a></p>)}{answer.claims?.map((x,i)=><p key={i}>{x.text} {x.source_ids.map(id=><a key={id} href={'#source-'+id}>[{id}] </a>)}</p>)}{answer.general.map((g,i)=><p key={i}>{g}</p>)}<h3>Where this answer came from</h3>{answer.citations.length?answer.citations.map(s=><article id={'source-'+s.id} key={s.id}><b>[{s.id}] {s.label}</b><small>{s.path}</small><blockquote>{s.quote}</blockquote><a href={s.url} target="_blank" rel="noopener noreferrer">Read the official trial record</a></article>):<p>No supporting excerpt was identified. No study-specific facts were generated.</p>}<p>{answer.guidance}</p></section>}</>}
-    </main></div>;
+  async function search(e) {
+    e.preventDefault();if(!query.trim())return;
+    if(/^NCT\d{8}$/i.test(query.trim()))return select(query.trim().toUpperCase());
+    const request=begin('search');setSearched(false);
+    try {const data=await searchClinicalTrials({query:query.trim(),pageSize:5});if(current(request.version)){setResults(data.studies);setSearched(true);}}
+    catch(e){if(current(request.version))setError(e.message);}finally{if(current(request.version))setPhase('');}
+  }
+  async function ask(q=question) {if(!trial||!q.trim()||busy)return;setQuestion(q);setReply(null);await generate(trial,q.trim(),'question',begin('answer'));}
+  function retryRequest(){if(!retry)return;if(retry.id)select(retry.id);else generate(retry.data,retry.q,retry.kind,begin(retry.kind==='overview'?'overview':'answer'));}
+  function changeStudy(){generation.current++;controller.current?.abort();setTrial(null);setOverview(null);setReply(null);setResults([]);setQuestion('');setError('');setRetry(null);setSearched(false);setPhase('');}
+  return <div className="portal"><Sidebar role={role}/><main className="portal-main explainer-page">
+    <div className="page-head"><div><span className="eyebrow">{role==='researcher'?'Researcher workspace':'Patient workspace'}</span><h1>Trial explainer</h1><p>Choose a study, read a short overview, then ask a question.</p></div></div>
+    {!trial && <section className="explainer-discovery"><form onSubmit={search} className="explainer-search"><label htmlFor="trial-search">Find a real clinical trial</label><div><input id="trial-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Condition, keyword, or NCT ID" disabled={busy} required/><button className="btn primary" disabled={busy}>Search</button></div></form>
+      {phase==='search'&&<p role="status">Searching ClinicalTrials.gov...</p>}{phase==='study'&&<p role="status">Opening the selected study...</p>}
+      {searched&&!results.length&&<p>No studies found. Try a broader condition or keyword.</p>}
+      {results.length>0&&<section aria-label="Search results">{results.map(t=><article className="explainer-result" key={t.nctId}><h2>{t.title}</h2><p>{t.nctId} · {t.status}</p><button className="btn secondary" disabled={busy} onClick={()=>select(t.nctId)}>{phase==='study'?'Opening study...':'Explain this study'}</button></article>)}</section>}
+    </section>}
+    {trial&&<><section className="explainer-record"><div className="explainer-record-heading"><div><span className="eyebrow">Selected study</span><h2>{trial.title}</h2><p>{trial.nctId} · {trial.status}</p></div><button className="btn secondary" onClick={changeStudy}>Change study</button></div><a href={trial.studyUrl} target="_blank" rel="noopener noreferrer">View official trial record</a></section>
+      <section className="explainer-overview" aria-live="polite"><h2>Study overview</h2>{phase==='overview'?<p role="status">AI is reading the study and preparing a short overview...</p>:overview?<Answer answer={overview} title="About this study"/>:<p>The overview will appear here.</p>}</section>
+      <section className="explainer-questions"><h2>Ask a question</h2><div className="explainer-samples">{sampleQuestions.map(q=><button key={q} className="btn secondary" disabled={busy} onClick={()=>ask(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();ask();}}><label htmlFor="trial-question">What would you like to know?</label><textarea id="trial-question" value={question} onChange={e=>setQuestion(e.target.value)} maxLength={2000} placeholder="For example: What tests would participants have?" disabled={busy} required/><button className="btn primary" disabled={busy||!question.trim()}>{phase==='answer'?'Preparing answer...':'Ask question'}</button></form><p className="explainer-help">English only. Your question and the public trial record are sent to AI. Do not enter real medical records.</p>
+      </section>
+      <section className="explainer-reply" aria-live="polite"><h2>Your answer</h2>{phase==='answer'?<p role="status">Reading the trial record for your question...</p>:reply?<><p className="explainer-question-text">{reply.question}</p><Answer answer={reply} title="Answer"/></>:<p>Ask a question above to see the answer here.</p>}</section>
+    </>}
+    {error&&<div role="alert" className="explainer-error"><b>We could not complete that request.</b><p>{error}</p>{retry&&<button className="btn secondary" disabled={busy} onClick={retryRequest}>Try again</button>}</div>}
+    <p className="explainer-help">AI explanations can make mistakes. Verify details using the cited sources. The study team must confirm eligibility.</p>
+  </main></div>;
 }
