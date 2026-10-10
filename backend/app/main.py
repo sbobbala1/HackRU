@@ -12,8 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import auth, credentials, firestore
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
+from .eligibility_parser import ParsedEligibility, parse_deterministic
 
-app = FastAPI(title="ProtocolMatch AI API", version="0.1.0")
+app = FastAPI(title="Vitra API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # replace/add Hosting domain in production
@@ -60,10 +61,24 @@ class InvitationInput(BaseModel):
     participant_id: str
     preview: str = Field(max_length=1000)
 
+class EligibilityParseInput(BaseModel):
+    study_id: str = Field(min_length=1, max_length=64)
+    original_eligibility_text: str = Field(max_length=50000)
+
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "ProtocolMatch AI API"}
+    return {"status": "ok", "service": "Vitra API"}
+
+@app.post("/eligibility/parse", response_model=ParsedEligibility)
+def parse_eligibility(payload: EligibilityParseInput):
+    """Deterministic fallback parser.
+
+    An optional LLM integration must use strict JSON Schema structured output,
+    validate it against ParsedEligibility, and retain original_text for every rule.
+    The fallback is intentionally conservative and flags ambiguous wording.
+    """
+    return parse_deterministic(payload.study_id, payload.original_eligibility_text)
 
 
 @app.post("/trials", status_code=status.HTTP_201_CREATED)

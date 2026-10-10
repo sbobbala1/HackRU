@@ -1,4 +1,4 @@
-# ProtocolMatch AI
+# Vitra
 
 Full-stack hackathon prototype: React/Vite frontend, Firebase Authentication and Firestore persistence, FastAPI for trusted match and invitation operations, and Firebase Hosting configuration.
 
