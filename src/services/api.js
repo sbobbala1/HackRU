@@ -13,6 +13,7 @@ export const api = {
   syntheticDemo: () => request('/synthetic/patients/demo'),
   syntheticImport: (bundle) => request('/synthetic/patients/import', {method:'POST', body:JSON.stringify({bundle,synthetic_attested:true})}),
   syntheticMatch: (parsed,bundle) => request('/synthetic/patients/match', {method:'POST', body:JSON.stringify({parsed,bundle,synthetic_attested:true})}),
+  explainTrial: (nctId,topic,citations) => request('/trials/explain', {method:'POST',body:JSON.stringify({nct_id:nctId,topic,sources:citations.map(({id,path,quote})=>({id,path,quote}))})}),
   health: () => request('/health'),
   matchTrial: (trialId, token) => request(`/trials/${trialId}/matches`, { headers: { Authorization: `Bearer ${token}` } }),
   createTrial: (trial, token) => request('/trials', { method: 'POST', body: JSON.stringify(trial), headers: { Authorization: `Bearer ${token}` } }),

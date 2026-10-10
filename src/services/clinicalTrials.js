@@ -32,6 +32,7 @@ export function normalizeClinicalTrial(study, retrievedAt = new Date().toISOStri
     maxAge: eligibility.maximumAge || 'Not provided in the source',
     studyUrl: `https://clinicaltrials.gov/study/${nctId}`,
     source: 'ClinicalTrials.gov API v2', retrievedAt,
+    protocolSection: p,
   };
 }
 

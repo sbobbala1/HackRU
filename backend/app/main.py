@@ -20,10 +20,25 @@ from dotenv import load_dotenv
 from .eligibility_parser import ParsedEligibility, parse_deterministic
 from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility, rank_profiles
 from .llm_assist import suggest_criterion_types, summarize_match
+from .trial_explainer import simplify_trial
 
 load_dotenv()
 
 app = FastAPI(title="Vitra API", version="0.1.0")
+
+class ExplainerSource(BaseModel):
+    id: str = Field(pattern=r'^S[1-6]$')
+    path: str = Field(max_length=150)
+    quote: str = Field(min_length=1, max_length=20000)
+
+class ExplainerInput(BaseModel):
+    nct_id: str = Field(pattern=r'^NCT\d{8}$')
+    topic: Literal['purpose','eligibility','participation','visits','risks','unclear']
+    sources: list[ExplainerSource] = Field(min_length=1,max_length=6)
+
+@app.post('/trials/explain')
+def explain_trial(payload: ExplainerInput):
+    return simplify_trial(payload.nct_id, payload.topic, [s.model_dump() for s in payload.sources])
 class SyntheticImportInput(BaseModel):
     bundle: dict
     synthetic_attested: bool = False
