@@ -20,10 +20,38 @@ from dotenv import load_dotenv
 from .eligibility_parser import ParsedEligibility, parse_deterministic
 from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility, rank_profiles
 from .llm_assist import suggest_criterion_types, summarize_match
+from .trial_explainer import answer_trial_question
 
 load_dotenv()
 
 app = FastAPI(title="Vitra API", version="0.1.0")
+
+class ExplainerSource(BaseModel):
+    id: str = Field(pattern=r'^S[1-6]$')
+    path: str = Field(max_length=150)
+    quote: str = Field(min_length=1, max_length=20000)
+
+class ExplainerInput(BaseModel):
+    nct_id: str = Field(pattern=r'^NCT\d{8}$')
+    question: str = Field(min_length=1,max_length=2000)
+    language: str = Field(default='en',max_length=10)
+
+@app.post('/trials/explain')
+def explain_trial(payload: ExplainerInput):
+    try:
+        return answer_trial_question(payload.nct_id, payload.question, payload.language)
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(502, str(exc)) from exc
+    except Exception as exc:
+        # Do not expose secrets, provider response bodies, or arbitrary exception text.
+        name=type(exc).__name__
+        message='Unable to read the trial record or generate an AI answer. Check connectivity and retry.'
+        if name=='AuthenticationError': message='OpenAI rejected the backend API key. Check backend/.env and restart the backend.'
+        elif name=='RateLimitError': message='OpenAI quota or rate limit reached. Check API billing and retry shortly.'
+        elif name in ('APITimeoutError','TimeoutError'): message='The trial or AI request timed out. Please retry.'
+        raise HTTPException(502,message) from exc
 class SyntheticImportInput(BaseModel):
     bundle: dict
     synthetic_attested: bool = False
