@@ -29,7 +29,7 @@ def answer_trial_question(nct_id, question, language='en', client=None, record=N
     fields = source_fields(record)
     client = client or _client()
     if client is None:
-        raise RuntimeError('AI is not configured. Add OPENAI_API_KEY to backend/.env and restart the backend.')
+        raise RuntimeError('AI is not configured. Add GEMINI_API_KEY to backend/.env and restart the backend.')
     citation_schema = {'type':'object','additionalProperties':False,'required':['path','quote'],'properties':{'path':{'type':'string'},'quote':{'type':'string'}}}
     schema = {'type':'object','additionalProperties':False,'required':['status','message','claims'], 'properties':{
         'status':{'type':'string','enum':['supported','missing','advice','unsupported_language']},
