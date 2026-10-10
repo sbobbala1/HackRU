@@ -22,6 +22,8 @@ test('offline backend and validation failures are readable',async()=>{
     await assert.rejects(api.health(),/Cannot reach the Vitra API/);
     globalThis.fetch=async()=>({ok:false,json:async()=>({detail:[{msg:'invalid'}]})});
     await assert.rejects(api.health(),/could not be processed/);
+    globalThis.fetch=async()=>({ok:false,status:502,json:async()=>{throw new SyntaxError('Not JSON');}});
+    await assert.rejects(api.health(),/Restart npm.cmd run dev/);
     globalThis.fetch=async()=>({ok:false,json:async()=>({detail:'OpenAI quota reached'})});
     await assert.rejects(api.health(),/OpenAI quota reached/);
   } finally {globalThis.fetch=original;}

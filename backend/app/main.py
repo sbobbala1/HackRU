@@ -22,7 +22,7 @@ from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eli
 from .llm_assist import suggest_criterion_types, summarize_match
 from .trial_explainer import answer_trial_question
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 
 app = FastAPI(title="Vitra API", version="0.1.0")
 

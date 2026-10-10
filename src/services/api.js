@@ -1,4 +1,4 @@
-const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta.env?.VITE_API_URL || (import.meta.env?.DEV ? '/api' : 'http://localhost:8000')).replace(/\/$/, '');
 
 async function request(path, options = {}) {
   const { signal: callerSignal, ...rest } = options;
@@ -10,7 +10,10 @@ async function request(path, options = {}) {
     });
     if (!response.ok) {
       const detail = (await response.json().catch(() => ({}))).detail;
-      throw new Error(typeof detail === 'string' ? detail : 'The request could not be processed. Please retry.');
+      const fallback = [502, 503, 504].includes(response.status)
+        ? 'The Vitra backend is unavailable. Restart npm.cmd run dev from the project folder and try again.'
+        : 'The request could not be processed. Please retry.';
+      throw new Error(typeof detail === 'string' ? detail : fallback);
     }
     return await response.json();
   } catch (error) {
