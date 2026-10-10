@@ -1,0 +1,50 @@
+/* Public homepage navigation, FAQ, and dedicated About page */
+.public-site-header{height:78px;padding:0 clamp(22px,5vw,76px);background:#071b72;color:#fff;border:0;box-shadow:0 4px 18px #06144a1a}
+.public-site-header .brand{color:#fff;font-size:1.28rem;letter-spacing:-.03em}
+.public-site-header .logo{background:#ffffff1c;color:#fff}
+.public-site-header nav{gap:clamp(18px,2.5vw,38px)}
+.public-site-header nav a{padding:29px 0;color:#f4f6ff;font-size:.88rem;font-weight:600}
+.public-site-header nav a:hover{color:#c9d8ff}
+.public-site-header nav a:after{bottom:18px;background:#a9c0ff}
+.public-site-header .text-btn{color:#fff}
+.public-site-header .btn{background:#fff;color:#071b72;border-radius:6px}
+.public-site-header .btn:hover{background:#e8eeff}
+.home-faq{padding:96px clamp(24px,8vw,128px) 90px;background:#f5f7fb}
+.faq-heading{max-width:720px;margin:0 auto 28px;text-align:center}
+.faq-heading .eyebrow{justify-content:center}
+.faq-heading h2{margin:12px 0;font-size:clamp(2.15rem,3.5vw,3.3rem)}
+.faq-heading>p{margin:0}
+.faq-list{max-width:1180px;margin:0 auto;background:#fff;border:1px solid #e3e7ef;border-radius:14px;overflow:hidden;box-shadow:0 12px 34px #142c5010}
+.faq-list details+details{border-top:1px solid #e7eaf0}
+.faq-list summary{min-height:68px;padding:20px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px;cursor:pointer;list-style:none;color:#18304c;font-size:1rem;font-weight:650}
+.faq-list summary::-webkit-details-marker{display:none}
+.faq-list summary span{width:10px;height:10px;flex:0 0 auto;border-right:2px solid #61718b;border-bottom:2px solid #61718b;transform:rotate(45deg) translateY(-3px);transition:transform .18s}
+.faq-list details[open] summary span{transform:rotate(225deg) translate(-2px,-1px)}
+.faq-list details>p{max-width:930px;margin:0;padding:0 26px 23px;color:#617087;line-height:1.7}
+.faq-more{display:block;max-width:1180px;margin:24px auto 0;color:#446bb8;text-decoration:none;font-weight:600}
+.faq-more span{margin-left:5px;text-decoration:underline;text-underline-offset:3px}
+.about-read-more{display:inline-flex;margin-top:17px;color:#275ca8;font-weight:700;text-decoration:none}
+.about-read-more:hover,.faq-more:hover{text-decoration:underline;text-underline-offset:3px}
+.about-page{background:#fff}
+.about-page-hero{padding:clamp(86px,11vw,150px) clamp(24px,12vw,180px);background:linear-gradient(116deg,#071b72,#143e86 62%,#247e94);color:white}
+.about-page-hero .eyebrow{color:#b5e9e5}
+.about-page-hero h1{max-width:900px;margin:18px 0;color:#fff;font-family:'DM Sans',sans-serif;font-size:clamp(3.1rem,7vw,6.2rem);font-weight:750;letter-spacing:-.065em;line-height:.99}
+.about-page-hero>p{max-width:730px;margin:22px 0 30px;color:#e1eafa;font-size:clamp(1.05rem,1.6vw,1.25rem)}
+.about-page-hero .btn,.about-page-cta .btn{background:#fff;color:#071b72;border-radius:6px;text-decoration:none}
+.about-page-story{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:clamp(35px,7vw,100px);align-items:center;padding:100px clamp(24px,8vw,128px)}
+.about-page-image{min-height:470px;border-radius:18px;background:url('./assets/vitra-clinic-team.png') center/cover;box-shadow:0 22px 48px #1329441c}
+.about-page-story h2,.about-principles h2,.about-page-cta h2{font-size:clamp(2.2rem,3.8vw,3.8rem);letter-spacing:-.045em}
+.about-page-story p{font-size:1rem;line-height:1.75}
+.about-principles{padding:90px clamp(24px,8vw,128px);background:#f4f7fb;text-align:center}
+.about-principles>.eyebrow{justify-content:center}
+.about-principles h2{margin:12px 0 38px}
+.about-principles>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;text-align:left}
+.about-principles article{padding:28px;background:#fff;border:1px solid #e3e8f0;border-radius:13px;box-shadow:0 10px 25px #142c5008}
+.about-principles article>span{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#e3f4f1;color:#087e75;font-weight:800}
+.about-principles h3{margin:19px 0 8px;color:#18304c;font-size:1.1rem}
+.about-principles p{margin:0;font-size:.91rem}
+.about-page-cta{padding:88px 24px;background:#0c2b63;text-align:center}
+.about-page-cta h2{margin:0;color:#fff}
+.about-page-cta p{margin:13px 0 25px;color:#d5e1f2}
+@media(max-width:850px){.public-site-header{height:auto;min-height:72px;flex-wrap:wrap;padding:15px 22px}.public-site-header nav{order:3;width:100%;overflow-x:auto;gap:23px}.public-site-header nav a{padding:12px 0 8px;white-space:nowrap}.public-site-header nav a:after{bottom:2px}.about-page-story{grid-template-columns:1fr;padding-top:70px;padding-bottom:70px}.about-page-image{min-height:380px;max-width:720px;width:100%}.about-principles>div{grid-template-columns:1fr}}
+@media(max-width:520px){.public-site-header .brand{font-size:1.1rem}.public-site-header .header-actions{gap:9px}.public-site-header .header-actions .btn{padding:10px 12px}.public-site-header nav{gap:18px}.public-site-header nav a{font-size:.8rem}.faq-list summary{min-height:62px;padding:17px 18px;font-size:.92rem}.faq-list details>p{padding:0 18px 20px;font-size:.9rem}.home-faq{padding:70px 20px}.about-page-image{min-height:290px}.about-page-hero{padding-top:80px;padding-bottom:80px}}
