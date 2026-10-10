@@ -1,0 +1,292 @@
+[
+  {
+    "profile_id": "SYN-7BFDE42F4014",
+    "synthetic": true,
+    "source_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+    "as_of": "2026-10-10",
+    "age": 52,
+    "conditions": [
+      {
+        "label": "Type 2 Diabetes",
+        "code": "44054006",
+        "date": "2025-01-01",
+        "source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Condition",
+          "entry_index": 1,
+          "path": "entry[1].resource.code"
+        },
+        "date_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Condition",
+          "entry_index": 1,
+          "path": "entry[1].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "active",
+        "status_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Condition",
+          "entry_index": 1,
+          "path": "entry[1].resource.status/clinicalStatus"
+        }
+      }
+    ],
+    "medications": [
+      {
+        "label": "Metformin",
+        "code": "860975",
+        "date": "2026-10-01",
+        "source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "MedicationRequest",
+          "entry_index": 2,
+          "path": "entry[2].resource.medicationCodeableConcept"
+        },
+        "date_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "MedicationRequest",
+          "entry_index": 2,
+          "path": "entry[2].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "active",
+        "status_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "MedicationRequest",
+          "entry_index": 2,
+          "path": "entry[2].resource.status/clinicalStatus"
+        }
+      }
+    ],
+    "procedures": [
+      {
+        "label": "Synthetic routine examination",
+        "code": "",
+        "date": "2026-10-01",
+        "source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Procedure",
+          "entry_index": 3,
+          "path": "entry[3].resource.code"
+        },
+        "date_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Procedure",
+          "entry_index": 3,
+          "path": "entry[3].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "completed",
+        "status_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Procedure",
+          "entry_index": 3,
+          "path": "entry[3].resource.status/clinicalStatus"
+        }
+      }
+    ],
+    "observations": [
+      {
+        "label": "HbA1c",
+        "code": "4548-4",
+        "date": "2026-10-01",
+        "source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Observation",
+          "entry_index": 4,
+          "path": "entry[4].resource.valueQuantity"
+        },
+        "date_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Observation",
+          "entry_index": 4,
+          "path": "entry[4].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "value": 8.1,
+        "unit": "%",
+        "original_value": 8.1,
+        "original_unit": "%",
+        "usable": true,
+        "code_source": {
+          "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+          "resource_type": "Observation",
+          "entry_index": 4,
+          "path": "entry[4].resource.code"
+        },
+        "conversion": "No conversion"
+      }
+    ],
+    "warnings": [],
+    "age_source": {
+      "bundle_hash": "7bfde42f40141fecf8c8559fddf309b762b06a5e3adf33baa1efe7e10ac66a59",
+      "resource_type": "Patient",
+      "entry_index": 0,
+      "path": "entry[0].resource.birthDate"
+    }
+  },
+  {
+    "profile_id": "SYN-39244E86460F",
+    "synthetic": true,
+    "source_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+    "as_of": "2026-10-10",
+    "age": 82,
+    "conditions": [
+      {
+        "label": "Type 2 Diabetes",
+        "code": "44054006",
+        "date": "2025-01-01",
+        "source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Condition",
+          "entry_index": 1,
+          "path": "entry[1].resource.code"
+        },
+        "date_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Condition",
+          "entry_index": 1,
+          "path": "entry[1].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "active",
+        "status_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Condition",
+          "entry_index": 1,
+          "path": "entry[1].resource.status/clinicalStatus"
+        }
+      },
+      {
+        "label": "Cancer",
+        "code": "",
+        "date": "2026-09-01",
+        "source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Condition",
+          "entry_index": 5,
+          "path": "entry[5].resource.code"
+        },
+        "date_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Condition",
+          "entry_index": 5,
+          "path": "entry[5].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "active",
+        "status_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Condition",
+          "entry_index": 5,
+          "path": "entry[5].resource.status/clinicalStatus"
+        }
+      }
+    ],
+    "medications": [
+      {
+        "label": "Metformin",
+        "code": "860975",
+        "date": "2026-10-01",
+        "source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "MedicationRequest",
+          "entry_index": 2,
+          "path": "entry[2].resource.medicationCodeableConcept"
+        },
+        "date_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "MedicationRequest",
+          "entry_index": 2,
+          "path": "entry[2].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "active",
+        "status_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "MedicationRequest",
+          "entry_index": 2,
+          "path": "entry[2].resource.status/clinicalStatus"
+        }
+      }
+    ],
+    "procedures": [
+      {
+        "label": "Synthetic routine examination",
+        "code": "",
+        "date": "2026-10-01",
+        "source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Procedure",
+          "entry_index": 3,
+          "path": "entry[3].resource.code"
+        },
+        "date_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Procedure",
+          "entry_index": 3,
+          "path": "entry[3].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "status": "completed",
+        "status_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Procedure",
+          "entry_index": 3,
+          "path": "entry[3].resource.status/clinicalStatus"
+        }
+      }
+    ],
+    "observations": [
+      {
+        "label": "HbA1c",
+        "code": "4548-4",
+        "date": "2026-10-01",
+        "source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Observation",
+          "entry_index": 4,
+          "path": "entry[4].resource.valueQuantity"
+        },
+        "date_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Observation",
+          "entry_index": 4,
+          "path": "entry[4].resource.effectiveDateTime/onsetDateTime/performedDateTime/authoredOn"
+        },
+        "value": 8.3,
+        "unit": "%",
+        "original_value": 8.3,
+        "original_unit": "%",
+        "usable": true,
+        "code_source": {
+          "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+          "resource_type": "Observation",
+          "entry_index": 4,
+          "path": "entry[4].resource.code"
+        },
+        "conversion": "No conversion"
+      }
+    ],
+    "warnings": [],
+    "age_source": {
+      "bundle_hash": "39244e86460f4461f551f6228a17d9d9b24ea02adc00ba09867cca48e5ac6452",
+      "resource_type": "Patient",
+      "entry_index": 0,
+      "path": "entry[0].resource.birthDate"
+    }
+  },
+  {
+    "profile_id": "SYN-A6C2565EBCFB",
+    "synthetic": true,
+    "source_hash": "a6c2565ebcfbdf9f8d581ab4d11ce3ec4a66639736b51c79bc9acddda9cb2a59",
+    "as_of": "2026-10-10",
+    "age": null,
+    "conditions": [],
+    "medications": [],
+    "procedures": [],
+    "observations": [],
+    "warnings": [
+      "Missing or invalid birth date; age remains unknown"
+    ],
+    "age_source": {
+      "bundle_hash": "a6c2565ebcfbdf9f8d581ab4d11ce3ec4a66639736b51c79bc9acddda9cb2a59",
+      "resource_type": "Patient",
+      "entry_index": 0,
+      "path": "entry[0].resource.birthDate"
+    }
+  }
+]
