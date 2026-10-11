@@ -7,7 +7,6 @@ import { clearFinalistSelections, finalistEvent, readFinalistSelections } from '
 import { logActivity } from './activityLog';
 import './outreach-center.css';
 
-const STUDY_IDS = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
 const HISTORY_KEY = 'vitra-outreach-history-v1';
 const ARCHIVE_KEY = 'vitra-completed-recruitment-cycles-v1';
 const COMPLETION_STATUSES = new Set(['Scheduled', 'Sent', 'Simulated sent', 'Delivered', 'Responded', 'Opted out', 'Cancelled']);
@@ -50,7 +49,7 @@ export default function OutreachCenter({ Sidebar }) {
   const [archives, setArchives] = useState(() => readJson(ARCHIVE_KEY, []));
   const [bulkNotice, setBulkNotice] = useState('');
 
-  useEffect(() => { let alive = true; Promise.all(STUDY_IDS.map(getClinicalTrial)).then(rows => alive && setStudies(rows)); return () => { alive = false; }; }, []);
+  useEffect(() => { const ids = [...new Set(Object.values(finalists).map(item => item.trialId))]; if (!ids.length) { setStudies([]); return undefined; } let alive = true; Promise.all(ids.map(getClinicalTrial)).then(rows => alive && setStudies(rows)).catch(() => alive && setStudies([])); return () => { alive = false; }; }, [finalists]);
   useEffect(() => { const sync = () => setFinalists(readFinalistSelections()); window.addEventListener(finalistEvent, sync); return () => window.removeEventListener(finalistEvent, sync); }, []);
 
   const recipients = useMemo(() => Object.values(finalists).map(item => {

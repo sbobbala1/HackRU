@@ -3,10 +3,9 @@ import { getClinicalTrial } from './services/clinicalTrials';
 import { api } from './services/api';
 import { criteriaText } from './services/demoMode';
 import { patients } from './ExplainableMatchDemo';
-import { availabilityFor, profileName, readShortlist, saveAiSelection } from './recruitmentWorkflow';
+import { availabilityFor, profileName, readActiveRecruitmentContext, readShortlist, saveAiSelection } from './recruitmentWorkflow';
 import './researcher-dashboard.css';
 
-const STUDIES = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
 const WORKFLOW = ['Ready for AI review', 'Needs screening', 'Shortlisted', 'Not proceeding'];
 const STORAGE_KEY = 'vitra-researcher-workflow-v1';
 
@@ -35,11 +34,13 @@ export default function ResearcherRecruitmentDashboard({ Sidebar }) {
   const [showCompare, setShowCompare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cycleContext] = useState(readActiveRecruitmentContext);
 
   async function load() {
     setLoading(true); setError('');
     try {
-      const trialRows = await Promise.all(STUDIES.map(getClinicalTrial));
+      if (!cycleContext?.study?.nctId) { setStudies([]); setRankings({}); return; }
+      const trialRows = [await getClinicalTrial(cycleContext.study.nctId)];
       setStudies(trialRows);
       const ranked = await Promise.all(trialRows.map(async trial => {
         if (!trial.eligibility || trial.eligibility === 'Not provided in the source') return [trial.nctId, []];
@@ -53,7 +54,7 @@ export default function ResearcherRecruitmentDashboard({ Sidebar }) {
       setError(`${e.message} Check the Vitra API and ClinicalTrials.gov connection, then retry.`);
     } finally { setLoading(false); }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [cycleContext?.study?.nctId]);
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(workflow)); } catch { setError('Browser storage is unavailable. Workflow changes cannot be saved.'); } }, [workflow]);
 
   const allRows = useMemo(() => studies.flatMap(trial => (rankings[trial.nctId] || []).map(result => {

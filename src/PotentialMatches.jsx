@@ -8,7 +8,6 @@ import { RECRUITMENT_CYCLE_EVENT, availabilityFor, profileName, readActiveRecrui
 import { finalistEvent, readFinalistSelections } from './finalistSelections';
 import './potential-matches.css';
 
-const STUDIES = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
 
 export default function PotentialMatches({ Sidebar }) {
   const [loaded, setLoaded] = useState([]);
@@ -18,13 +17,15 @@ export default function PotentialMatches({ Sidebar }) {
   const [cycleContext, setCycleContext] = useState(readActiveRecruitmentContext);
 
   useEffect(() => {
+    const id = cycleContext?.study?.nctId;
+    if (!id) { setLoaded([]); return undefined; }
     let live = true;
-    Promise.all(STUDIES.map(getClinicalTrial)).then(async studies => {
-      const pairs = await Promise.all(studies.map(async study => [study, await api.rankEligibility(study.nctId, study.studyUrl, criteriaText(study), patients)]));
-      if (live) setLoaded(pairs.flatMap(([study, results]) => results.map(result => ({ study, result, profile: patients.find(profile => profile.profile_id === result.profile_id) }))));
+    getClinicalTrial(id).then(async study => {
+      const results = await api.rankEligibility(study.nctId, study.studyUrl, criteriaText(study), patients);
+      if (live) setLoaded(results.map(result => ({ study, result, profile: patients.find(profile => profile.profile_id === result.profile_id) })));
     }).catch(reason => live && setError(reason.message));
     return () => { live = false; };
-  }, []);
+  }, [cycleContext?.study?.nctId]);
   useEffect(() => { const sync = () => setCycleContext(readActiveRecruitmentContext()); window.addEventListener(RECRUITMENT_CYCLE_EVENT, sync); return () => window.removeEventListener(RECRUITMENT_CYCLE_EVENT, sync); }, []);
   useEffect(() => {
     const sync = () => setFinalists(readFinalistSelections());

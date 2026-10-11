@@ -5,7 +5,6 @@ import WorkplaceBadge from './WorkplaceBadge';
 import { locationMatchesWorkplace, publicSitesFromStudies, readWorkplace } from './researcherWorkspace';
 import './clinical-trials-workspace.css';
 
-const STUDY_IDS = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
 const QUICK_QUESTIONS = [
   'What is the purpose of this study?',
   'What participation requirements are listed?',

@@ -7,7 +7,6 @@ import { readWorkplace } from './researcherWorkspace';
 import { AI_REVIEW_EVENT, RECRUITMENT_CYCLE_EVENT, availabilityFor, profileName, readActiveRecruitmentContext, readAiReviewQueue, readAiSelection, screeningSourceStatus } from './recruitmentWorkflow';
 import { isSelectableFinalist, selectFinalist } from './finalistSelections';
 
-const STUDIES = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
 export const patients = [
   {profile_id:'SYN-001',demo_consent:true,age:56,conditions:['Type 2 diabetes'],conditions_complete:true,medications:[{name:'Dulaglutide',status:'current',start_date:'2025-08-01'}],medications_complete:true,labs:[{name:'HbA1c',value:8.1,unit:'%',date:'2026-08-10'},{name:'BMI',value:29,unit:'kg/m2',date:'2026-08-10'}],facts:{}},
   {profile_id:'SYN-002',demo_consent:false,age:44,conditions:['Type 1 diabetes'],conditions_complete:true,medications:[{name:'Insulin',status:'current'}],medications_complete:true,labs:[{name:'HbA1c',value:8.2,unit:'%',date:'2026-09-01'}],facts:{}},
@@ -44,8 +43,8 @@ export const patients = [
 export default function ExplainableMatchDemo({Sidebar, aiFitReview=false}){
   const initialSelection=readAiSelection();
   const [cycleContext,setCycleContext]=useState(readActiveRecruitmentContext);
-  const [studies,setStudies]=useState([]),[studyId,setStudyId]=useState(cycleContext?.study?.nctId || initialSelection?.studyId || STUDIES[0]),[results,setResults]=useState([]),[selected,setSelected]=useState(null),[selectedForFinals,setSelectedForFinals]=useState([]),[error,setError]=useState(''),[assignmentNotice,setAssignmentNotice]=useState(''),[loading,setLoading]=useState(false),[aiQueue,setAiQueue]=useState(readAiReviewQueue);
-  useEffect(()=>{const activeId=aiFitReview?cycleContext?.study?.nctId:null;if(aiFitReview&&!activeId){setStudies([]);return undefined}let live=true;const ids=activeId?[activeId]:STUDIES;Promise.all(ids.map(id=>getClinicalTrial(id))).then(rows=>{if(live){setStudies(rows);setStudyId(rows[0]?.nctId||'');setError('')}}).catch(e=>{if(live)setError(`Unable to load official ClinicalTrials.gov records: ${e.message}`)});return()=>{live=false}},[aiFitReview,cycleContext?.study?.nctId]);
+  const [studies,setStudies]=useState([]),[studyId,setStudyId]=useState(cycleContext?.study?.nctId || initialSelection?.studyId || ''),[results,setResults]=useState([]),[selected,setSelected]=useState(null),[selectedForFinals,setSelectedForFinals]=useState([]),[error,setError]=useState(''),[assignmentNotice,setAssignmentNotice]=useState(''),[loading,setLoading]=useState(false),[aiQueue,setAiQueue]=useState(readAiReviewQueue);
+  useEffect(()=>{const activeId=cycleContext?.study?.nctId;if(!activeId){setStudies([]);setResults([]);return undefined}let live=true;getClinicalTrial(activeId).then(row=>{if(live){setStudies([row]);setStudyId(row.nctId);setError('')}}).catch(e=>{if(live)setError(`Unable to load official ClinicalTrials.gov records: ${e.message}`)});return()=>{live=false}},[cycleContext?.study?.nctId]);
   useEffect(()=>{const sync=()=>setAiQueue(readAiReviewQueue());window.addEventListener(AI_REVIEW_EVENT,sync);return()=>window.removeEventListener(AI_REVIEW_EVENT,sync)},[]);
   useEffect(()=>{const sync=()=>setCycleContext(readActiveRecruitmentContext());window.addEventListener(RECRUITMENT_CYCLE_EVENT,sync);return()=>window.removeEventListener(RECRUITMENT_CYCLE_EVENT,sync)},[]);
   const study=useMemo(()=>studies.find(s=>s.nctId===studyId),[studies,studyId]);

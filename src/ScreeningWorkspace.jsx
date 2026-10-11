@@ -5,7 +5,6 @@ import WorkplaceBadge from './WorkplaceBadge';
 import { AI_REVIEW_EVENT, RECRUITMENT_CYCLE_EVENT, availabilityFor, profileName, readActiveRecruitmentContext, readAiReviewQueue, screeningSourceStatus, setAiReviewReady, shortlistKey } from './recruitmentWorkflow';
 import './screening-workspace.css';
 
-const STUDIES = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
 const statusClass = status => status.toLowerCase().replace(/[^a-z]+/g, '-');
 
 export default function ScreeningWorkspace({ Sidebar }) {
