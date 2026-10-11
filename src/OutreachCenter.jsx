@@ -12,19 +12,17 @@ const HISTORY_KEY = 'vitra-outreach-history-v1';
 const ARCHIVE_KEY = 'vitra-completed-recruitment-cycles-v1';
 const COMPLETION_STATUSES = new Set(['Sent', 'Simulated sent', 'Delivered', 'Responded', 'Opted out']);
 const FOLDERS = ['Inbox', 'All outreach', 'Drafts', 'Ready to review', 'Screening follow-up', 'Sent', 'Scheduled', 'Delivered', 'Responded', 'Opted out'];
-const CHANNELS = ['Email', 'SMS / text', 'Phone-call script', 'Secure-portal message'];
+const CHANNELS = ['Email', 'SMS / text'];
 const TEMPLATES = {
-  'Screening follow-up reminder': { purpose: 'Screening follow-up', subject: 'Next step for your research-study screening', body: row => `Hello ${profileName(row.profile)},\n\nThank you for your interest in learning about ${row.item.trialTitle} (${row.item.trialId}). The study team may need to complete or continue the screening process before any participation decision can be made.\n\nPublic study site: ${row.item.publicSite}\nStudy-team contact: research-team@example.test\n\nParticipation is voluntary. Screening does not guarantee eligibility or enrollment. You may opt out of further contact.` },
-  'Screening appointment / next-step reminder': { purpose: 'Screening follow-up', subject: 'Reminder: research-study screening next step', body: row => `Hello ${profileName(row.profile)},\n\nPlease contact the study team about the next screening step for ${row.item.trialTitle} (${row.item.trialId}).\n\nPublic study site: ${row.item.publicSite}\nStudy-team contact: research-team@example.test\n\nParticipation is voluntary, and this message does not confirm eligibility or enrollment.` },
-  'Missing-information follow-up': { purpose: 'Screening follow-up', subject: 'Study-team follow-up may be needed', body: row => `Hello ${profileName(row.profile)},\n\nThe study team may need additional information before continuing the screening process for ${row.item.trialTitle} (${row.item.trialId}).\n\nPlease contact the study team at research-team@example.test if you would like to learn more. This does not confirm eligibility or enrollment.` },
-  'Study-team contact reminder': { purpose: 'Screening follow-up', subject: 'Contact the study team to learn more', body: row => `Hello ${profileName(row.profile)},\n\nIf you would like to learn more about ${row.item.trialTitle} (${row.item.trialId}), the study team can explain the study and any screening next steps.\n\nPublic study site: ${row.item.publicSite}\nStudy-team contact: research-team@example.test\n\nParticipation is voluntary. Screening does not guarantee eligibility or enrollment.` },
-  'Screening no-longer-needed notice': { purpose: 'General outreach', subject: 'Update about research-study follow-up', body: row => `Hello ${profileName(row.profile)},\n\nNo additional outreach is currently planned for ${row.item.trialTitle} (${row.item.trialId}). This is not a medical decision or an enrollment notice.\n\nYou may opt out of further contact at any time.` },
-  'General study invitation': { purpose: 'General outreach', subject: 'Invitation to learn about a clinical research study', body: row => `Hello ${profileName(row.profile)},\n\nYou may be interested in learning more about ${row.item.trialTitle} (${row.item.trialId}). The approved study team can explain the study and any required screening.\n\nParticipation is voluntary. This is not a confirmation of eligibility or enrollment.` },
+  'Screening follow-up': { subject: 'Next step for your study screening', email: row => `Hello ${profileName(row.profile)},\n\nThe study team would like to help with the next screening step for ${row.item.trialTitle} (${row.item.trialId}).\n\nPublic study site: ${row.item.publicSite}\n\nPlease contact the study team to arrange or complete screening. Participation is voluntary and this does not confirm eligibility or enrollment.`, sms: row => `${row.item.trialId}: Please contact the study team about your next screening step at ${row.item.publicSite}. Participation is voluntary.` },
+  'Trial participation invitation': { subject: 'Invitation to learn more about a clinical research study', email: row => `Hello ${profileName(row.profile)},\n\nYou are invited to learn more about ${row.item.trialTitle} (${row.item.trialId}) at ${row.item.publicSite}.\n\nThe study team can explain the study and any required screening. Participation is voluntary and this does not confirm eligibility or enrollment.`, sms: row => `${row.item.trialId}: You can learn more about this research study at ${row.item.publicSite}. Contact the study team if interested.` },
 };
 const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || '') || fallback; } catch { return fallback; } };
 const displayStatus = status => status === 'Simulated sent' ? 'Sent' : status;
 const folderMatches = (row, folder) => folder === 'All outreach' || folder === 'Drafts' && row.status === 'Draft created' || folder === 'Screening follow-up' && row.screeningFollowUp && !COMPLETION_STATUSES.has(row.status) || displayStatus(row.status) === folder;
 const priority = row => row.screeningFollowUp && !COMPLETION_STATUSES.has(row.status) ? 0 : ({ 'Ready to review': 1, Scheduled: 2, 'Draft created': 3, Sent: 4, 'Simulated sent': 4, Delivered: 5, Responded: 6, 'Opted out': 7 }[row.status] ?? 8);
+const draftKey = (channel, template) => `${channel}:${template}`;
+const templateBody = (template, row, channel) => channel === 'SMS / text' ? TEMPLATES[template].sms(row) : TEMPLATES[template].email(row);
 
 export default function OutreachCenter({ Sidebar }) {
   const [studies, setStudies] = useState([]);
@@ -38,7 +36,7 @@ export default function OutreachCenter({ Sidebar }) {
   const [trialFilter, setTrialFilter] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all');
   const [channel, setChannel] = useState('Email');
-  const [template, setTemplate] = useState('Screening follow-up reminder');
+  const [template, setTemplate] = useState('Screening follow-up');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [scheduledFor, setScheduledFor] = useState('');
@@ -58,7 +56,8 @@ export default function OutreachCenter({ Sidebar }) {
     const eligible = profile?.demo_consent && item.availability === 'Available' && item.deterministicOutcome === 'Potential Match' && record.status !== 'Opted out';
     const screeningStatus = screeningSourceStatus(item.trialId, profile);
     const screeningFollowUp = item.outreachDraftType === 'screening-follow-up' && !COMPLETION_STATUSES.has(record.status || item.outreachDraftStatus);
-    return { item, profile, study, key, record, eligible, screeningStatus, screeningFollowUp, status: eligible ? (record.status || item.outreachDraftStatus || 'Draft created') : 'Draft disabled', channel: record.channel || 'Email', template: record.template || (screeningFollowUp ? 'Screening follow-up reminder' : 'General study invitation') };
+    const defaultTemplate = screeningFollowUp ? 'Screening follow-up' : 'Trial participation invitation';
+    return { item, profile, study, key, record, eligible, screeningStatus, screeningFollowUp, status: eligible ? (record.status || item.outreachDraftStatus || 'Draft created') : 'Draft disabled', channel: record.channel || 'Email', template: TEMPLATES[record.template] ? record.template : defaultTemplate };
   }).sort((a, b) => priority(a) - priority(b) || a.item.trialId.localeCompare(b.item.trialId) || profileName(a.profile).localeCompare(profileName(b.profile))), [studies, history, finalists]);
   const filtered = recipients.filter(row => folderMatches(row, folder) && (trialFilter === 'all' || row.item.trialId === trialFilter) && (channelFilter === 'all' || row.channel === channelFilter) && (!query.trim() || `${profileName(row.profile)} ${row.item.trialId} ${row.item.trialTitle} ${row.item.publicSite}`.toLowerCase().includes(query.toLowerCase())));
   const inboxItems = useMemo(() => recipients.slice(0, 4).map((row, index) => {
@@ -80,35 +79,36 @@ export default function OutreachCenter({ Sidebar }) {
     if (!active) { setSubject(''); setBody(''); return; }
     const nextTemplate = active.template;
     const nextChannel = active.channel;
-    const draft = active.record.drafts?.[nextChannel];
+    const draft = active.record.drafts?.[draftKey(nextChannel, nextTemplate)];
     setTemplate(nextTemplate);
     setChannel(nextChannel);
     setSubject(draft?.subject || TEMPLATES[nextTemplate].subject);
-    setBody(draft?.body || TEMPLATES[nextTemplate].body(active));
+    setBody(draft?.body || templateBody(nextTemplate, active, nextChannel));
     setScheduledFor(active.record.scheduledFor ? active.record.scheduledFor.slice(0, 16) : '');
   }, [active?.key]);
   useEffect(() => {
     if (!active) return;
-    const draft = active.record.drafts?.[channel];
+    const draft = active.record.drafts?.[draftKey(channel, template)];
     setSubject(draft?.subject || TEMPLATES[template].subject);
-    setBody(draft?.body || TEMPLATES[template].body(active));
+    setBody(draft?.body || templateBody(template, active, channel));
   }, [channel]);
   function persist(next) { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); setHistory(next); }
   function updateActiveDraft(overrides = {}) {
     if (!active || !active.eligible) return;
     const now = new Date().toISOString();
     const previous = history[active.key] || {};
-    persist({ ...history, [active.key]: { ...previous, status: previous.status || 'Draft created', channel, template, updatedAt: now, drafts: { ...(previous.drafts || {}), [channel]: { subject, body, template, updatedAt: now } }, ...overrides } });
+    persist({ ...history, [active.key]: { ...previous, status: previous.status || 'Draft created', channel, template, updatedAt: now, drafts: { ...(previous.drafts || {}), [draftKey(channel, template)]: { subject, body, template, updatedAt: now } }, ...overrides } });
   }
-  function chooseTemplate(nextTemplate) { setTemplate(nextTemplate); setSubject(TEMPLATES[nextTemplate].subject); setBody(TEMPLATES[nextTemplate].body(active)); }
+  function chooseTemplate(nextTemplate) { setTemplate(nextTemplate); const draft = active?.record.drafts?.[draftKey(channel, nextTemplate)]; setSubject(draft?.subject || TEMPLATES[nextTemplate].subject); setBody(draft?.body || templateBody(nextTemplate, active, channel)); }
   function record(status, target = active) {
     if (!target || !target.eligible) return;
     const now = new Date().toISOString();
     const previous = history[target.key] || {};
     const draftSubject = target.key === active?.key ? subject : TEMPLATES[target.template].subject;
-    const draftBody = target.key === active?.key ? body : TEMPLATES[target.template].body(target);
+    const draftBody = target.key === active?.key ? body : templateBody(target.template, target, target.channel);
     const scheduledAt = status === 'Scheduled' && target.key === active?.key && scheduledFor ? new Date(scheduledFor).toISOString() : previous.scheduledFor;
-    persist({ ...history, [target.key]: { ...previous, status, channel: target.key === active?.key ? channel : target.channel, template: target.key === active?.key ? template : target.template, at: now, scheduledFor: scheduledAt, drafts: { ...(previous.drafts || {}), [target.key === active?.key ? channel : target.channel]: { subject: draftSubject, body: draftBody, template: target.key === active?.key ? template : target.template, updatedAt: now } }, events: [...(previous.events || []), { status, channel: target.key === active?.key ? channel : target.channel, at: now, scheduledFor: scheduledAt, operator: 'Researcher workspace' }] } });
+    const recordChannel = target.key === active?.key ? channel : target.channel; const recordTemplate = target.key === active?.key ? template : target.template;
+    persist({ ...history, [target.key]: { ...previous, status, channel: recordChannel, template: recordTemplate, at: now, scheduledFor: scheduledAt, drafts: { ...(previous.drafts || {}), [draftKey(recordChannel, recordTemplate)]: { subject: draftSubject, body: draftBody, template: recordTemplate, updatedAt: now } }, events: [...(previous.events || []), { status, channel: recordChannel, at: now, scheduledFor: scheduledAt, operator: 'Researcher workspace' }] } });
     const changed = previous.status !== status || status === 'Scheduled' && previous.scheduledFor !== scheduledAt;
     if (changed) {
       const labels = { 'Ready to review': ['outreach_ready_to_review', 'Outreach ready to review'], Scheduled: ['outreach_scheduled', 'Outreach scheduled'], Sent: ['outreach_sent', 'Outreach sent'], Delivered: ['outreach_delivered', 'Outreach delivered'], Responded: ['outreach_responded', 'Outreach response recorded'], 'Opted out': ['outreach_opted_out', 'Outreach opt-out recorded'] };
@@ -118,7 +118,7 @@ export default function OutreachCenter({ Sidebar }) {
   }
   function toggleSelection(key) { setSelectedRows(rows => rows.includes(key) ? rows.filter(item => item !== key) : [...rows, key]); }
   function applyBulk(status) { const valid = selection.filter(row => row.eligible); valid.forEach(row => record(status, row)); setBulkNotice(valid.length ? `${valid.length} draft${valid.length === 1 ? '' : 's'} marked ${status.toLowerCase()}.` : 'Select at least one eligible recipient first.'); }
-  function applyBulkTemplate() { const valid = selection.filter(row => row.eligible); const now = new Date().toISOString(); const next = { ...history }; valid.forEach(row => { const previous = next[row.key] || {}; next[row.key] = { ...previous, status: previous.status || 'Draft created', channel: row.channel, template, drafts: { ...(previous.drafts || {}), [row.channel]: { subject: TEMPLATES[template].subject, body: TEMPLATES[template].body(row), template, updatedAt: now } }, updatedAt: now }; }); persist(next); setBulkNotice(valid.length ? `${template} applied to ${valid.length} draft${valid.length === 1 ? '' : 's'}.` : 'Select at least one eligible recipient first.'); }
+  function applyBulkTemplate() { const valid = selection.filter(row => row.eligible); const now = new Date().toISOString(); const next = { ...history }; valid.forEach(row => { const previous = next[row.key] || {}; next[row.key] = { ...previous, status: previous.status || 'Draft created', channel: row.channel, template, drafts: { ...(previous.drafts || {}), [draftKey(row.channel, template)]: { subject: TEMPLATES[template].subject, body: templateBody(template, row, row.channel), template, updatedAt: now } }, updatedAt: now }; }); persist(next); setBulkNotice(valid.length ? `${template} applied to ${valid.length} draft${valid.length === 1 ? '' : 's'}.` : 'Select at least one eligible recipient first.'); }
   function completeCycle() {
     const completedAt = new Date().toISOString();
     const cycle = { id: `CYCLE-${Date.now().toString(36).toUpperCase()}`, researcherId: recipients[0]?.item.researcherId || 'demo-researcher', completedAt, fictional: true, finalists: recipients.map(row => ({ syntheticParticipantId: row.item.profileId, fictionalName: profileName(row.profile), nctId: row.item.trialId, trialTitle: row.item.trialTitle, publicSite: row.item.publicSite, deterministicOutcome: row.item.deterministicOutcome, requirementCounts: row.item.counts, simulatedOutreachStatus: row.status, simulatedOutreachHistory: row.record.events || [] })) };
@@ -126,6 +126,8 @@ export default function OutreachCenter({ Sidebar }) {
     localStorage.setItem(ARCHIVE_KEY, JSON.stringify([cycle, ...archives])); localStorage.removeItem(HISTORY_KEY); clearFinalistSelections(); resetActiveRecruitmentWorkflow(); sessionStorage.setItem('vitra-cycle-reset-notice', 'Outreach cycle completed. Active recruitment workflow has been reset. Archived history is available in Outreach Center.'); location.assign('/researcher/screening');
   }
   const summary = { finalists: recipients.length, trials: [...new Set(recipients.map(row => row.item.trialId))], sites: [...new Set(recipients.map(row => row.item.publicSite))], statuses: recipients.reduce((all, row) => ({ ...all, [row.status]: (all[row.status] || 0) + 1 }), {}) };
+
+  if (folder !== 'Inbox' && channel === 'SMS / text' && active) return <div className="portal"><Sidebar role="researcher"/><main className="portal-main outreach-center"><div className="page-head"><div><span className="eyebrow">Final Matches</span><h1>Outreach Center</h1></div><WorkplaceBadge/></div><section className="outreach-layout"><aside className="outreach-folders">{FOLDERS.map(name => <button key={name} className={folder === name ? 'active' : ''} onClick={() => setFolder(name)}>{name}<b>{name === 'Inbox' ? inboxItems.length : recipients.filter(row => folderMatches(row, name)).length}</b></button>)}</aside><section className="outreach-list"><div className="outreach-list-head"><div><h2>SMS conversations</h2><small>Select a recipient in Email view to change the conversation.</small></div></div>{recipients.map(row => <article key={row.key} className={`outreach-recipient ${active.key === row.key ? 'selected' : ''}`}><button onClick={() => { setSelected(row.key); setChannel('Email'); }}><b>{profileName(row.profile)}</b><small>{row.item.trialId} · {row.item.publicSite}</small><small>{row.record.drafts?.[draftKey('SMS / text', row.template)]?.body || 'No saved text draft'}</small></button></article>)}</section><section className="outreach-composer sms-composer"><span className="eyebrow">SMS / text</span><h2>{profileName(active.profile)}</h2><p><b>{active.item.trialId}</b> · {active.item.publicSite}</p><div className="sms-thread">{(active.record.events || []).filter(event => event.channel === 'SMS / text').map((event, index) => <p key={`${event.at}-${index}`} className="sms-bubble"><b>{displayStatus(event.status)}</b><br/><small>{new Date(event.at).toLocaleString()}</small></p>)}{body && <p className="sms-bubble draft-bubble">{body}</p>}</div><label>Channel<select value={channel} onChange={event => setChannel(event.target.value)}>{CHANNELS.map(item => <option key={item}>{item}</option>)}</select></label><label>Purpose<select value={template} onChange={event => chooseTemplate(event.target.value)}>{Object.keys(TEMPLATES).map(item => <option key={item}>{item}</option>)}</select></label><label className="sms-input">Text message<textarea value={body} onChange={event => setBody(event.target.value)}/><small>{body.length} characters</small></label><label>Send date & time<input type="datetime-local" value={scheduledFor} onChange={event => setScheduledFor(event.target.value)}/></label><div className="outreach-actions"><button className="btn secondary" onClick={updateActiveDraft}>Save draft</button><button className="btn" onClick={() => record('Sent')}>Send</button><button className="btn secondary" disabled={!scheduledFor} onClick={() => record('Scheduled')}>Schedule</button></div></section></section></main></div>;
 
   if (folder === 'Inbox') return <div className="portal"><Sidebar role="researcher"/><main className="portal-main outreach-center">
     <div className="page-head"><div><span className="eyebrow">Final Matches</span><h1>Outreach Center</h1></div><div className="outreach-header"><WorkplaceBadge/><button className="btn secondary" onClick={() => setArchiveOpen(true)}>Completed cycles ({archives.length})</button></div></div>
