@@ -33,7 +33,7 @@ export function publicSitesFromStudies(studies = []) {
 }
 
 export function locationMatchesWorkplace(location, workplace = readWorkplace(), scope = 'exact') {
-  if (!workplace || workplace.id === 'all' || !workplace.country) return true;
+  if (scope === 'all' || !workplace || workplace.id === 'all' || !workplace.country) return true;
   const item = typeof location === 'string' ? { publicLocationText: location } : location;
   const text = `${item.publicLocationText || ''} ${item.facility || ''} ${item.city || ''} ${item.stateOrRegion || ''} ${item.country || ''}`.toLowerCase();
   const has = value => !value || text.includes(String(value).toLowerCase());
