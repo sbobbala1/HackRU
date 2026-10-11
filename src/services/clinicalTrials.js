@@ -57,10 +57,13 @@ async function getJson(url) {
     const id = parsed.pathname.split('/').at(-1);
     const records = snapshots.records.map(r => ({...r, _vitraCached: true, _vitraRetrievedAt: snapshots.retrieved_at}));
     if (/^NCT\d{8}$/i.test(id)) return records.find(r => r.protocolSection.identificationModule.nctId === id.toUpperCase());
+    const conditionQuery = (parsed.searchParams.get('query.cond') || '').toLowerCase();
     const query = (parsed.searchParams.get('query.term') || '').toLowerCase();
     const location = (parsed.searchParams.get('query.locn') || '').toLowerCase();
     const status = parsed.searchParams.get('filter.overallStatus');
-    return {studies: records.filter(r => JSON.stringify(r.protocolSection).toLowerCase().includes(query) &&
+    return {studies: records.filter(r => (conditionQuery
+      ? JSON.stringify(r.protocolSection.conditionsModule?.conditions || []).toLowerCase().includes(conditionQuery)
+      : !query || JSON.stringify(r.protocolSection).toLowerCase().includes(query)) &&
       (!location || JSON.stringify(r.protocolSection.contactsLocationsModule || {}).toLowerCase().includes(location)) &&
       (!status || status.split(',').includes(r.protocolSection.statusModule.overallStatus))), cached: true};
   }
@@ -79,9 +82,9 @@ async function getJson(url) {
   } finally { clearTimeout(timeout); }
 }
 
-export async function searchClinicalTrials({ query = '', location = '', status = '', type = '', minAge = '', maxAge = '', pageToken = '', pageSize = 10 } = {}) {
+export async function searchClinicalTrials({ query = '', queryMode = 'condition', location = '', status = '', type = '', minAge = '', maxAge = '', pageToken = '', pageSize = 10 } = {}) {
   const params = new URLSearchParams({ format: 'json', pageSize: String(pageSize) });
-  if (query) params.set('query.term', query);
+  if (query) params.set(queryMode === 'condition' ? 'query.cond' : 'query.term', query);
   if (location) params.set('query.locn', location);
   if (status) params.set('filter.overallStatus', status);
   if (pageToken) params.set('pageToken', pageToken);

@@ -21,6 +21,7 @@ const localSourceAnswer = (study, question) => {
 export default function ClinicalTrialsWorkspace({ Sidebar }) {
   const [studies, setStudies] = useState([]);
   const [keyword, setKeyword] = useState('');
+  const [searchMode, setSearchMode] = useState('condition');
   const [status, setStatus] = useState('all');
   const [type, setType] = useState('all');
   const [site, setSite] = useState('all');
@@ -44,7 +45,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
     let active = true;
     const timer = setTimeout(() => {
       setLoadingStudies(true); setError('');
-      searchClinicalTrials({ query: keyword, status: status === 'all' ? '' : status, type: type === 'all' ? '' : type, pageSize: 50 })
+      searchClinicalTrials({ query: keyword, queryMode: searchMode, status: status === 'all' ? '' : status, type: type === 'all' ? '' : type, pageSize: 50 })
         .then(result => {
           if (!active) return;
           setStudies(result.studies);
@@ -54,7 +55,13 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
         .finally(() => active && setLoadingStudies(false));
     }, keyword ? 300 : 0);
     return () => { active = false; clearTimeout(timer); };
-  }, [keyword, status, type]);
+  }, [keyword, searchMode, status, type]);
+
+  const matchesKeyword = study => {
+    if (!keyword || searchMode === 'condition') return true;
+    const text = [study.title, study.officialTitle, study.summary, study.eligibility, ...(study.conditions || [])].join(' ').toLowerCase();
+    return text.includes(keyword.trim().toLowerCase());
+  };
 
   const sites = useMemo(
     () => publicSitesFromStudies(studies).filter(item => locationMatchesWorkplace(item, workplace, scope)),
@@ -63,17 +70,17 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
   const visible = useMemo(() => studies.filter(study => (
     (status === 'all' || study.status === status)
     && (type === 'all' || study.type === type)
-    && (!keyword || `${study.title} ${study.conditions?.join(' ')}`.toLowerCase().includes(keyword.toLowerCase()))
+    && matchesKeyword(study)
     && (site === 'all' || study.locationDetails?.some(item => item.publicLocationText === site))
     && study.locationDetails?.some(item => locationMatchesWorkplace(item, workplace, scope))
-  )), [studies, status, type, keyword, site, workplace, scope]);
+  )), [studies, status, type, keyword, searchMode, site, workplace, scope]);
   // Discovery should still be useful when the selected workplace has no result for a typed condition.
   // In that case we show matching public records and label them as outside the workplace context.
   const broadMatches = useMemo(() => studies.filter(study => (
     (status === 'all' || study.status === status)
     && (type === 'all' || study.type === type)
-    && (!keyword || `${study.title} ${study.conditions?.join(' ')}`.toLowerCase().includes(keyword.toLowerCase()))
-  )), [studies, status, type, keyword]);
+    && matchesKeyword(study)
+  )), [studies, status, type, keyword, searchMode]);
   const listedStudies = visible.length ? visible : broadMatches;
   const showingBroaderResults = !visible.length && broadMatches.length > 0;
   const selectedStudy = listedStudies.find(study => study.nctId === selectedStudyId) || listedStudies[0] || studies.find(study => study.nctId === selectedStudyId) || studies[0];
@@ -127,6 +134,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
     {error && <div className="form-error">{error}</div>}
     <section className="clinical-trial-controls">
       <label>Condition or keyword<input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="e.g. diabetes"/></label>
+      <label>Search in<select value={searchMode} onChange={event => setSearchMode(event.target.value)}><option value="condition">Condition / disease</option><option value="keyword">All study details</option></select></label>
       <label>Recruitment status<select value={status} onChange={event => setStatus(event.target.value)}><option value="all">All statuses</option>{[...new Set(studies.map(study => study.status))].map(value => <option key={value}>{value}</option>)}</select></label>
       <label>Study type<select value={type} onChange={event => setType(event.target.value)}><option value="all">All study types</option>{[...new Set(studies.map(study => study.type))].map(value => <option key={value}>{value}</option>)}</select></label>
       <label>Search area<select value={scope} onChange={event => { setScope(event.target.value); setSite('all'); }}><option value="exact">Exact public workplace</option><option value="city">Broaden to city</option><option value="state">Broaden to state / region</option><option value="country">Broaden to country</option><option value="all">All public locations</option></select></label>
