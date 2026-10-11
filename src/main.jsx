@@ -28,6 +28,7 @@ import ResearchTeam from './ResearchTeam';
 import ClinicalTrialGuide from './ClinicalTrialGuide';
 import ResearchLocations from './ResearchLocations';
 import ResearchSites from './ResearchSites';
+import ClinicalTrialsWorkspace from './ClinicalTrialsWorkspace';
 import './about-faq.css';
 
 const trials = [
@@ -101,8 +102,8 @@ function Side({role}) {
   {label:'ACCOUNT',items:[['Settings','/patient/settings']]}
  ];
  const researcherGroups=[
-  {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['My trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
-  {label:'RECRUITMENT',items:[['Potential matches','/researcher/recruitment'],['AI Fit Review','/researcher/ai-fit-review']]},
+  {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
+  {label:'RECRUITMENT',items:[['AI Fit Review','/researcher/ai-fit-review'],['Potential matches','/researcher/recruitment']]},
   {label:'TOOLS',items:[['Eligibility parser','/researcher/parser'],['Trial explainer','/researcher/explainer']]},
   {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
@@ -221,7 +222,7 @@ function App(){
  if(p.startsWith('/trials/')){const id=p.split('/')[2];return /^NCT\d{8}$/i.test(id)?<OfficialTrialPage id={id.toUpperCase()}/>:<TrialDetails id={id}/>;}
  if(p==='/researcher/dashboard')return <ResearcherDashboard/>;
  if(p==='/researcher/recruitment')return <ResearcherRecruitmentDashboard Sidebar={Side}/>;
- if(p==='/researcher/trials')return <ResearcherTrials/>;
+ if(p==='/researcher/trials')return <ClinicalTrialsWorkspace Sidebar={Side}/>;
  if(p==='/researcher/analytics')return <ResearcherAnalytics/>;
  if(p==='/researcher/settings')return <WorkspaceSettings role="researcher"/>;
  if(p==='/researcher/explainer')return <TrialExplainer Sidebar={Side} role="researcher"/>;
