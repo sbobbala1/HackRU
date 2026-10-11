@@ -29,6 +29,10 @@ import ClinicalTrialGuide from './ClinicalTrialGuide';
 import ResearchLocations from './ResearchLocations';
 import ResearchSites from './ResearchSites';
 import ClinicalTrialsWorkspace from './ClinicalTrialsWorkspace';
+import ScreeningWorkspace from './ScreeningWorkspace';
+import PotentialMatches from './PotentialMatches';
+import WorkplaceBadge from './WorkplaceBadge';
+import './researcher-workplace.css';
 import './about-faq.css';
 
 const trials = [
@@ -103,7 +107,7 @@ function Side({role}) {
  ];
  const researcherGroups=[
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
-  {label:'RECRUITMENT',items:[['AI Fit Review','/researcher/ai-fit-review'],['Potential matches','/researcher/recruitment']]},
+  {label:'RECRUITMENT',items:[['AI Fit Review','/researcher/ai-fit-review'],['Screening','/researcher/screening'],['Potential matches','/researcher/recruitment']]},
   {label:'TOOLS',items:[['Eligibility parser','/researcher/parser'],['Trial explainer','/researcher/explainer']]},
   {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
@@ -116,6 +120,7 @@ function Side({role}) {
  return <aside className="side">
   <div className="side-top"><a className="brand" onClick={()=>go('/')}><img className="vitra-brand-image" src="/vitra-logo.png" alt="Vitra"/></a><span className="side-product">TRIAL DISCOVERY</span></div>
   <div className="workspace-switch"><span className="workspace-dot">{role==='patient'?'P':'R'}</span><div><small>{demoMode?'Offline judging mode · cached studies':'Synthetic demo workspace'}</small><b>{role==='patient'?'Patient':'Researcher'}</b></div></div>
+  {role==='researcher'&&<WorkplaceBadge/>}
   <nav className="side-nav" aria-label={`${role} workspace navigation`}>{groups.map(group=><div className="side-nav-group" key={group.label}><div className="role-label">{group.label}</div>{group.items.map(([label,path])=><button key={path} className={location.pathname===path?'active':''} onClick={()=>go(path)}><span className="side-nav-mark"/>{label}</button>)}</div>)}</nav>
   <div className="side-bottom"><div className="side-account-wrap"><button className="side-account" onClick={()=>setAccountOpen(!accountOpen)} aria-expanded={accountOpen}><span className="demo-user-avatar">{avatar}</span><span><b>{name}</b><small>{account?'Firebase account':'Demo account'}</small></span><span className="account-caret">⌄</span></button>{accountOpen&&<div className="account-menu"><button onClick={()=>go(role==='patient'?'/patient/settings':'/researcher/settings')}>Profile & settings</button><button onClick={logout}>Sign out</button></div>}</div></div>
  </aside>
@@ -221,7 +226,8 @@ function App(){
  if(p==='/patient/settings')return <WorkspaceSettings role="patient"/>;
  if(p.startsWith('/trials/')){const id=p.split('/')[2];return /^NCT\d{8}$/i.test(id)?<OfficialTrialPage id={id.toUpperCase()}/>:<TrialDetails id={id}/>;}
  if(p==='/researcher/dashboard')return <ResearcherDashboard/>;
- if(p==='/researcher/recruitment')return <ResearcherRecruitmentDashboard Sidebar={Side}/>;
+ if(p==='/researcher/recruitment')return <PotentialMatches Sidebar={Side}/>;
+ if(p==='/researcher/screening')return <ScreeningWorkspace Sidebar={Side}/>;
  if(p==='/researcher/trials')return <ClinicalTrialsWorkspace Sidebar={Side}/>;
  if(p==='/researcher/analytics')return <ResearcherAnalytics/>;
  if(p==='/researcher/settings')return <WorkspaceSettings role="researcher"/>;

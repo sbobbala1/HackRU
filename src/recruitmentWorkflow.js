@@ -1,5 +1,6 @@
 export const AI_SELECTION_KEY = 'vitra-ai-fit-selection-v1';
 export const SHORTLIST_KEY = 'vitra-potential-matches-v1';
+export const SCREENING_QUEUE_KEY = 'vitra-screening-queue-v1';
 
 export function profileName(profile) {
   return profile?.display_name || `Fictional participant ${profile?.profile_id || ''}`.trim();
@@ -29,6 +30,10 @@ export function readAiSelection() {
 
 export function readShortlist() {
   return readJson(SHORTLIST_KEY, {});
+}
+
+export function readScreeningQueue() {
+  return readJson(SCREENING_QUEUE_KEY, {});
 }
 
 export function shortlistKey(trialId, profileId) {

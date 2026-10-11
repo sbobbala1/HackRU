@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { getClinicalTrial } from './services/clinicalTrials';
 import { patients } from './ExplainableMatchDemo';
 import { availabilityFor, profileName, saveAiSelection } from './recruitmentWorkflow';
+import WorkplaceBadge from './WorkplaceBadge';
 import './clinical-trials-workspace.css';
 
 const STUDY_IDS = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
@@ -28,7 +29,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
     location.assign('/researcher/ai-fit-review');
   }
   return <div className="portal"><Sidebar role="researcher"/><main className="portal-main clinical-trials-workspace">
-    <div className="page-head"><div><span className="eyebrow">Recruitment workflow · step 1 of 3</span><h1>Clinical Trials</h1><p>Choose a public study record and begin with fictional participants who are available for demo outreach.</p></div><button className="btn secondary" onClick={() => location.assign('/researcher/ai-fit-review')}>Open AI Fit Review</button></div>
+    <div className="page-head"><div><span className="eyebrow">Recruitment workflow · step 1 of 4</span><h1>Clinical Trials</h1><p>Choose a public study record and begin with fictional participants who are available for demo outreach.</p></div><WorkplaceBadge/></div>
     <div className="notice"><span><b>Availability is not eligibility.</b> “Available” means a fictional, consented demo profile can be reviewed for outreach. A study team must perform clinical screening before any enrollment decision.</span></div>
     {error && <div className="form-error">Unable to load public study records: {error}</div>}
     <section className="clinical-trial-controls"><label>Public study<select value={studyId} onChange={event => setStudyId(event.target.value)}>{STUDY_IDS.map(id => <option key={id} value={id}>{id}{studies.find(row => row.nctId === id) ? ` · ${studies.find(row => row.nctId === id).title}` : ''}</option>)}</select></label><label>Availability<select value={availability} onChange={event => setAvailability(event.target.value)}><option value="all">All fictional profiles</option><option>Available</option><option>Pending confirmation</option><option>Not available</option></select></label></section>

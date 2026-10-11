@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getClinicalTrial } from './services/clinicalTrials';
 import { patients } from './ExplainableMatchDemo';
+import WorkplaceBadge from './WorkplaceBadge';
+import { locationMatchesWorkplace, readWorkplace, saveWorkplace, WORKPLACES } from './researcherWorkspace';
 import './research-sites.css';
 
 const STUDY_IDS = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
@@ -11,6 +13,10 @@ export default function ResearchSites({ Sidebar }) {
   const [studies, setStudies] = useState([]);
   const [studyId, setStudyId] = useState(STUDY_IDS[0]);
   const [site, setSite] = useState('');
+  const [workplace, setWorkplace] = useState(readWorkplace);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [keyword, setKeyword] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -21,8 +27,9 @@ export default function ResearchSites({ Sidebar }) {
     return () => { active = false; };
   }, []);
 
-  const study = studies.find(row => row.nctId === studyId);
-  const sites = study?.locations || [];
+  const visibleStudies = studies.filter(row => (statusFilter === 'all' || row.status === statusFilter) && (typeFilter === 'all' || row.type === typeFilter) && (!keyword || `${row.title} ${row.conditions?.join(' ')}`.toLowerCase().includes(keyword.toLowerCase())));
+  const study = visibleStudies.find(row => row.nctId === studyId) || visibleStudies[0];
+  const sites = (study?.locations || []).filter(location => locationMatchesWorkplace(location, workplace));
   const selectedSite = site || sites[0] || '';
   const cohort = useMemo(() => {
     const topic = normalize(study?.conditions?.[0] || '');
@@ -31,11 +38,15 @@ export default function ResearchSites({ Sidebar }) {
   const consented = cohort.filter(profile => profile.demo_consent);
 
   return <div className="portal"><Sidebar role="researcher"/><main className="portal-main research-sites-page">
-    <div className="page-head"><div><span className="eyebrow">Researcher workspace · site-aware synthetic cohorts</span><h1>Data & sites</h1><p>Choose a public study site, then review the fictional demo cohort assigned to this workflow.</p></div></div>
+    <div className="page-head"><div><span className="eyebrow">Researcher workspace · site-aware synthetic cohorts</span><h1>Data & sites</h1><p>Choose your workplace area, then browse public study sites and the fictional demo cohort used for this workflow.</p></div><WorkplaceBadge/></div>
     <div className="notice"><span><b>Synthetic cohort notice:</b> hospital/site names and locations are public study-record data when available. The participant cohort below is fictional and is not hospital patient data.</span></div>
     {error && <div className="form-error">{error}</div>}
     <section className="site-controls">
-      <label>Study<select value={studyId} onChange={event => { setStudyId(event.target.value); setSite(''); }}>{STUDY_IDS.map(id => <option key={id} value={id}>{id}{studies.find(row => row.nctId === id) ? ` · ${studies.find(row => row.nctId === id).title}` : ''}</option>)}</select></label>
+      <label>Researcher workplace<select value={workplace.id} onChange={event => setWorkplace(saveWorkplace(event.target.value))}>{WORKPLACES.map(place => <option key={place.id} value={place.id}>{place.label}</option>)}</select></label>
+      <label>Recruitment status<select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="all">All statuses</option>{[...new Set(studies.map(row => row.status))].map(status => <option key={status}>{status}</option>)}</select></label>
+      <label>Study type<select value={typeFilter} onChange={event => setTypeFilter(event.target.value)}><option value="all">All study types</option>{[...new Set(studies.map(row => row.type))].map(type => <option key={type}>{type}</option>)}</select></label>
+      <label>Condition or keyword<input value={keyword} onChange={event => setKeyword(event.target.value)} placeholder="e.g. diabetes"/></label>
+      <label>Study<select value={study?.nctId || ''} onChange={event => { setStudyId(event.target.value); setSite(''); }}>{visibleStudies.map(row => <option key={row.nctId} value={row.nctId}>{row.nctId} · {row.title}</option>)}</select></label>
       {study && <a href={study.studyUrl} target="_blank" rel="noreferrer">Open ClinicalTrials.gov record ↗</a>}
     </section>
     {!study && !error && <div className="empty">Loading public study sites…</div>}
