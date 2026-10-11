@@ -16,12 +16,16 @@ export default function ScreeningWorkspace({ Sidebar }) {
   const [autoSelect, setAutoSelect] = useState(false);
   const [autoCount, setAutoCount] = useState(3);
   const [autoNotice, setAutoNotice] = useState('');
+  const [cycleNotice, setCycleNotice] = useState(() => sessionStorage.getItem('vitra-cycle-reset-notice') || '');
 
   useEffect(() => {
     let active = true;
     Promise.all(STUDIES.map(getClinicalTrial)).then(rows => active && setStudies(rows)).catch(reason => active && setError(reason.message));
     return () => { active = false; };
   }, []);
+  useEffect(() => {
+    if (cycleNotice) sessionStorage.removeItem('vitra-cycle-reset-notice');
+  }, [cycleNotice]);
   useEffect(() => {
     const sync = () => setQueue(readAiReviewQueue());
     window.addEventListener(AI_REVIEW_EVENT, sync);
@@ -62,7 +66,7 @@ export default function ScreeningWorkspace({ Sidebar }) {
   return <div className="portal"><Sidebar role="researcher"/><main className="portal-main screening-workspace">
     <div className="page-head"><div><span className="eyebrow">Recruitment workflow · Screening → AI Fit Review → Final Matches</span><h1>Screening</h1><p>Review fictional hospital/study-team workflow status, then choose which cleared records are ready for AI Fit Review.</p></div><WorkplaceBadge/></div>
     <div className="notice screening-notice"><span><b>Clinical screening is performed by the approved study team.</b> Workflow status supplied by the fictional approved study-team record.</span><span>Researchers cannot edit screening status. Detailed source-linked criterion evidence is reviewed in AI Fit Review.</span></div>
-    {error && <div className="form-error">Unable to load public study context: {error}</div>}
+    {error && <div className="form-error">Unable to load public study context: {error}</div>}{cycleNotice && <div className="success">{cycleNotice}</div>}
     <section className="screening-metrics">{[[counts.total,'Fictional workflow records'],[counts.cleared,'Screening workflow cleared'],[counts.followUp,'Needs study-team follow-up'],[counts.notAdvancing,'Not advancing'],[counts.ready,'Ready for AI Fit Review']].map(([value,label]) => <article key={label}><b>{value}</b><span>{label}</span></article>)}</section>
     <section className="screening-controls"><div className="screening-tabs">{[['all','All records'],['cleared','Workflow cleared'],['ready','Ready for AI Fit Review'],['follow-up','Needs follow-up'],['not-advancing','Not advancing']].map(([value,label]) => <button key={value} className={filter === value ? 'active' : ''} onClick={() => setFilter(value)}>{label}</button>)}</div></section>
     <section className="auto-selection-panel"><div><span className="eyebrow">Queue assistant</span><h2>Auto-select cleared participants</h2><p>Choose how many eligible fictional records to add. Only records with read-only screening workflow clearance, fictional consent, and availability can be selected.</p></div><label className="auto-select-toggle"><input type="checkbox" checked={autoSelect} onChange={event => setAutoSelect(event.target.checked)}/><span/><b>Use automatic selection</b></label>{autoSelect && <div className="auto-select-actions"><label>Participants to add<input type="number" min="1" max={Math.max(1, eligibleForAuto.length)} value={autoCount} onChange={event => setAutoCount(event.target.value)}/></label><button className="btn" disabled={!eligibleForAuto.length} onClick={addAutomaticSelections}>Add {Math.max(1, Number(autoCount) || 1)} to AI Fit Review</button><small>{eligibleForAuto.length} additional record{eligibleForAuto.length === 1 ? '' : 's'} currently eligible for automatic selection.</small></div>}{autoNotice && <div className="success auto-select-notice">{autoNotice}</div>}</section>

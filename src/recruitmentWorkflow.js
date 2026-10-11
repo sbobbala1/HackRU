@@ -59,3 +59,11 @@ export function setAiReviewReady({ trialId, profileId, ready }) {
 export function shortlistKey(trialId, profileId) {
   return `${trialId}:${profileId}`;
 }
+
+export function resetActiveRecruitmentWorkflow() {
+  localStorage.removeItem(AI_SELECTION_KEY);
+  localStorage.removeItem(AI_REVIEW_QUEUE_KEY);
+  localStorage.removeItem(SHORTLIST_KEY);
+  localStorage.removeItem(SCREENING_QUEUE_KEY);
+  window.dispatchEvent(new Event(AI_REVIEW_EVENT));
+}

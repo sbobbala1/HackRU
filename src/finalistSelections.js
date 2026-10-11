@@ -9,6 +9,7 @@ export const finalistEvent = EVENT;
 export const finalistKey = ({ researcherId, profileId, trialId, publicSite }) => [researcherId, profileId, trialId, publicSite || 'public-site-not-provided'].join('::');
 export const isSelectableFinalist = ({ profile, result, stage }) => Boolean(profile?.demo_consent) && (profile?.availability || 'Available') === 'Available' && result?.outcome === 'Potential Match' && stage === 'Screening workflow cleared';
 export const readFinalistSelections = () => read();
+export const clearFinalistSelections = () => write({});
 
 export async function selectFinalist({ profile, study, result, publicSite, stage }) {
   if (!isSelectableFinalist({ profile, result, stage })) throw new Error('Only available, consented fictional Potential Match records ready for researcher follow-up can be selected.');
