@@ -31,6 +31,7 @@ import ResearchSites from './ResearchSites';
 import ClinicalTrialsWorkspace from './ClinicalTrialsWorkspace';
 import ScreeningWorkspace from './ScreeningWorkspace';
 import PotentialMatches from './PotentialMatches';
+import OutreachCenter from './OutreachCenter';
 import WorkplaceBadge from './WorkplaceBadge';
 import './researcher-workplace.css';
 import './about-faq.css';
@@ -108,7 +109,7 @@ function Side({role}) {
  const researcherGroups=[
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
   {label:'RECRUITMENT',items:[['Screening','/researcher/screening'],['AI Fit Review','/researcher/ai-fit-review'],['Final Matches','/researcher/recruitment']]},
-  {label:'TOOLS',items:[['Trial explainer','/researcher/explainer']]},
+  {label:'OUTREACH',items:[['Outreach Center','/researcher/outreach'],['Trial explainer','/researcher/explainer']]},
   {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
  ];
@@ -228,6 +229,7 @@ function App(){
  if(p==='/researcher/dashboard')return <ResearcherDashboard/>;
  if(p==='/researcher/recruitment')return <PotentialMatches Sidebar={Side}/>;
  if(p==='/researcher/screening')return <ScreeningWorkspace Sidebar={Side}/>;
+ if(p==='/researcher/outreach')return <OutreachCenter Sidebar={Side}/>;
  if(p==='/researcher/trials')return <ClinicalTrialsWorkspace Sidebar={Side}/>;
  if(p==='/researcher/analytics')return <ResearcherAnalytics/>;
  if(p==='/researcher/settings')return <WorkspaceSettings role="researcher"/>;
