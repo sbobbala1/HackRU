@@ -41,4 +41,6 @@ export const api = {
   parseEligibility: (studyId, originalEligibilityText) => request('/eligibility/parse', { method: 'POST', body: JSON.stringify({ study_id: studyId, original_eligibility_text: originalEligibilityText }) }),
   matchEligibility: (parsed, profile) => request('/eligibility/match', { method: 'POST', body: JSON.stringify({ parsed, profile }) }),
   rankEligibility: (studyNctId, sourceUrl, eligibilityText, profiles, useAi = false) => request('/eligibility/rank', { method: 'POST', body: JSON.stringify({ study_nct_id: studyNctId, source_url: sourceUrl, eligibility_text: eligibilityText, profiles, use_ai: useAi, ...(demoMode?{evaluation_date:'2026-10-10T00:00:00Z'}:{}) }) }),
+  saveFinalist: (record, token) => request('/researcher/finalists', { method: 'POST', body: JSON.stringify(record), headers: { Authorization: `Bearer ${token}` } }),
+  removeFinalist: (key, token) => request(`/researcher/finalists/${encodeURIComponent(key)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };

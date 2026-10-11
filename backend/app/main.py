@@ -6,6 +6,7 @@ verified here and Firestore Admin access is used only after role and consent che
 from datetime import datetime, timezone
 import os
 import json
+import hashlib
 from pathlib import Path
 from .synthetic_patients import import_bundle, match_normalized
 from typing import Literal
@@ -145,6 +146,21 @@ class InvitationInput(BaseModel):
     participant_id: str
     preview: str = Field(max_length=1000)
 
+class FinalistSelectionInput(BaseModel):
+    profileId: str = Field(min_length=1, max_length=80)
+    trialId: str = Field(pattern=r'^NCT\d{8}$')
+    trialTitle: str = Field(min_length=1, max_length=500)
+    publicSite: str = Field(min_length=1, max_length=600)
+    consent: Literal[True]
+    availability: Literal['Available']
+    deterministicOutcome: Literal['Potential Match']
+    counts: dict[str, int] = Field(default_factory=dict)
+    sourceRetrievedAt: str | None = Field(default=None, max_length=80)
+    selectedAt: str = Field(min_length=1, max_length=80)
+    selectedBy: str = Field(min_length=1, max_length=200)
+    selectionStatus: Literal['Finalist selected']
+    outreachDraftStatus: Literal['Draft created']
+
 class EligibilityParseInput(BaseModel):
     study_id: str = Field(min_length=1, max_length=64)
     original_eligibility_text: str = Field(min_length=1, max_length=50000)
@@ -280,3 +296,25 @@ def record_invitation(trial_id: str, invitation: InvitationInput, user: dict = D
         "status": "recorded", "created_by": user["uid"], "created_at": datetime.now(timezone.utc),
     })
     return {"status": "recorded", "message": "No outbound message is sent by this API."}
+
+@app.get('/researcher/finalists')
+def list_finalists(user: dict = Depends(require_researcher)):
+    """Return only this researcher's fictional finalist selections and simulated drafts."""
+    rows = db().collection('researcherFinalists').document(user['uid']).collection('selections').stream()
+    return {'selections': [{'id': row.id, **row.to_dict()} for row in rows], 'disclaimer': 'Fictional demo data only. No message is sent by this API.'}
+
+@app.post('/researcher/finalists', status_code=status.HTTP_201_CREATED)
+def save_finalist(payload: FinalistSelectionInput, user: dict = Depends(require_researcher)):
+    """Atomically upsert a strictly validated finalist selection and its simulated draft."""
+    fingerprint = f"{user['uid']}|{payload.profileId}|{payload.trialId}|{payload.publicSite}"
+    selection_id = hashlib.sha256(fingerprint.encode()).hexdigest()[:40]
+    record = payload.model_dump() | {'researcherId': user['uid'], 'updatedAt': datetime.now(timezone.utc), 'simulationOnly': True}
+    db().collection('researcherFinalists').document(user['uid']).collection('selections').document(selection_id).set(record, merge=True)
+    return {'id': selection_id, **payload.model_dump(), 'message': 'Finalist selection and simulated outreach draft recorded. No outbound message was sent.'}
+
+@app.delete('/researcher/finalists/{selection_id}')
+def remove_finalist(selection_id: str, user: dict = Depends(require_researcher)):
+    if not selection_id or len(selection_id) > 200:
+        raise HTTPException(422, detail='Invalid finalist selection identifier')
+    db().collection('researcherFinalists').document(user['uid']).collection('selections').document(selection_id).delete()
+    return {'status': 'removed'}
