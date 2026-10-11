@@ -7,12 +7,20 @@ const API = 'https://clinicaltrials.gov/api/v2/studies';
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
 import snapshots from '../../backend/app/data/trial_snapshots.json' with { type: 'json' };
-import { demoMode } from './demoMode.js';
 
-/** @typedef {{id:string,nctId:string,title:string,officialTitle:string,summary:string,conditions:string[],status:string,phase:string[],type:string,locations:string[],eligibility:string,minAge:string,maxAge:string,studyUrl:string,source:string,retrievedAt:string}} ClinicalTrial */
+/** @typedef {{id:string,nctId:string,title:string,officialTitle:string,summary:string,conditions:string[],status:string,phase:string[],type:string,locations:string[],locationDetails:{facility:string,city:string,stateOrRegion:string,country:string,postalCode:string,publicLocationText:string}[],eligibility:string,minAge:string,maxAge:string,studyUrl:string,source:string,retrievedAt:string}} ClinicalTrial */
 
 const field = (obj, path, fallback) => path.split('.').reduce((v, key) => v?.[key], obj) ?? fallback;
-const humanLocations = locations => locations.map(l => [l.facility, l.city, l.state, l.country].filter(Boolean).join(', ')).filter(Boolean);
+export const normalizePublicLocations = (locations = []) => locations.map(location => {
+  const facility = location?.facility || '';
+  const city = location?.city || '';
+  const stateOrRegion = location?.state || location?.region || '';
+  const country = location?.country || '';
+  const postalCode = location?.zip || location?.postalCode || '';
+  const publicLocationText = [facility || 'Facility name not provided in the public source', city, stateOrRegion, country].filter(Boolean).join(', ');
+  return { facility, city, stateOrRegion, country, postalCode, publicLocationText };
+}).filter(location => location.city || location.stateOrRegion || location.country || location.facility);
+const humanLocations = locations => normalizePublicLocations(locations).map(location => location.publicLocationText);
 
 /** @returns {ClinicalTrial} */
 export function normalizeClinicalTrial(study, retrievedAt = new Date().toISOString()) {
@@ -29,6 +37,7 @@ export function normalizeClinicalTrial(study, retrievedAt = new Date().toISOStri
     phase: field(p, 'designModule.phases', []),
     type: field(p, 'designModule.studyType', 'Not provided in the source'),
     locations: humanLocations(field(p, 'contactsLocationsModule.locations', [])),
+    locationDetails: normalizePublicLocations(field(p, 'contactsLocationsModule.locations', [])),
     eligibility: eligibility.eligibilityCriteria || 'Not provided in the source',
     minAge: eligibility.minimumAge || 'Not provided in the source',
     maxAge: eligibility.maximumAge || 'Not provided in the source',
@@ -54,11 +63,6 @@ async function getJson(url) {
     return {studies: records.filter(r => JSON.stringify(r.protocolSection).toLowerCase().includes(query) &&
       (!location || JSON.stringify(r.protocolSection.contactsLocationsModule || {}).toLowerCase().includes(location)) &&
       (!status || status.split(',').includes(r.protocolSection.statusModule.overallStatus))), cached: true};
-  }
-  if (demoMode) {
-    const value = fallback();
-    if (!value) throw new Error('This study is not bundled in deterministic demo mode. Choose one of the three cached studies.');
-    return value;
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
