@@ -33,6 +33,7 @@ import PotentialMatches from './PotentialMatches';
 import OutreachCenter from './OutreachCenter';
 import ResearcherOperationsDashboard from './ResearcherOperationsDashboard';
 import WorkplaceBadge from './WorkplaceBadge';
+import PatientPortal from './PatientPortal';
 import './researcher-workplace.css';
 import './about-faq.css';
 
@@ -103,8 +104,8 @@ function Side({role}) {
  const [account,setAccount]=useState(null);
  useEffect(()=>watchAuthState(setAccount),[]);
  const patientGroups=[
-  {label:'PATIENT WORKSPACE',items:[['Overview','/patient/dashboard'],['Find trials','/patient/trials'],['Saved & interested','/patient/saved'],['My profile','/patient/profile']]},
-  {label:'ACCOUNT',items:[['Settings','/patient/settings']]}
+  {label:'PATIENT WORKSPACE',items:[['Overview','/patient/dashboard'],['My Trials','/patient/my-trials'],['Appointments','/patient/appointments'],['Messages','/patient/messages'],['Payments','/patient/payments']]},
+  {label:'ACCOUNT',items:[['Profile & preferences','/patient/profile']]}
  ];
  const researcherGroups=[
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
@@ -218,10 +219,14 @@ function App(){
  if(p==='/login')return <Auth mode="login"/>;
  if(p==='/signup')return <Auth mode="signup"/>;
  if(p==='/patient/onboarding')return <Onboarding/>;
- if(p==='/patient/dashboard')return <PatientDashboard/>;
+ if(p==='/patient/dashboard')return <PatientPortal Sidebar={Side} view="dashboard"/>;
+ if(p==='/patient/my-trials')return <PatientPortal Sidebar={Side} view="trials"/>;
+ if(p==='/patient/appointments')return <PatientPortal Sidebar={Side} view="appointments"/>;
+ if(p==='/patient/messages')return <PatientPortal Sidebar={Side} view="messages"/>;
+ if(p==='/patient/payments')return <PatientPortal Sidebar={Side} view="payments"/>;
  if(p==='/patient/trials')return <div className="portal"><Side role="patient"/><main className="portal-main"><div className="page-head"><div><span className="eyebrow">Patient workspace</span><h1>Find trials</h1><p>Explore official records and clearly labeled synthetic demo studies.</p></div></div><Notice/><LiveTrialSearch/><section className="section-row"><div><h2>Recommended demo trials</h2><p>Fictional listings included for the prototype walkthrough.</p></div></section><div className="cards">{trials.map(t=><TrialCard key={t.id} trial={t}/>)}</div></main></div>;
  if(p==='/patient/explainer')return <div className="portal"><Side role="patient"/><main className="portal-main"><div className="page-head"><div><span className="eyebrow">Patient workspace</span><h1>Trial explainer moved</h1><p>Ask source-linked questions directly from Find trials.</p></div></div><button className="btn" onClick={()=>go('/patient/trials')}>Open Find trials</button></main></div>;
- if(p==='/patient/profile')return <PatientProfile/>;
+ if(p==='/patient/profile')return <PatientPortal Sidebar={Side} view="profile"/>;
  if(p==='/patient/saved')return <SavedAndInterested/>;
  if(p==='/patient/settings')return <WorkspaceSettings role="patient"/>;
  if(p.startsWith('/trials/')){const id=p.split('/')[2];return /^NCT\d{8}$/i.test(id)?<OfficialTrialPage id={id.toUpperCase()}/>:<TrialDetails id={id}/>;}
