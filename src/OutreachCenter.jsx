@@ -4,6 +4,7 @@ import { patients } from './ExplainableMatchDemo';
 import WorkplaceBadge from './WorkplaceBadge';
 import { profileName, resetActiveRecruitmentWorkflow, screeningSourceStatus } from './recruitmentWorkflow';
 import { clearFinalistSelections, finalistEvent, readFinalistSelections } from './finalistSelections';
+import { logActivity } from './activityLog';
 import './outreach-center.css';
 
 const STUDY_IDS = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
@@ -96,6 +97,12 @@ export default function OutreachCenter({ Sidebar }) {
     const draftBody = target.key === active?.key ? body : TEMPLATES[target.template].body(target);
     const scheduledAt = status === 'Scheduled' && target.key === active?.key && scheduledFor ? new Date(scheduledFor).toISOString() : previous.scheduledFor;
     persist({ ...history, [target.key]: { ...previous, status, channel: target.key === active?.key ? channel : target.channel, template: target.key === active?.key ? template : target.template, at: now, scheduledFor: scheduledAt, drafts: { ...(previous.drafts || {}), [target.key === active?.key ? channel : target.channel]: { subject: draftSubject, body: draftBody, template: target.key === active?.key ? template : target.template, updatedAt: now } }, events: [...(previous.events || []), { status, channel: target.key === active?.key ? channel : target.channel, at: now, scheduledFor: scheduledAt, operator: 'Researcher workspace' }] } });
+    const changed = previous.status !== status || status === 'Scheduled' && previous.scheduledFor !== scheduledAt;
+    if (changed) {
+      const labels = { 'Ready to review': ['outreach_ready_to_review', 'Outreach ready to review'], Scheduled: ['outreach_scheduled', 'Outreach scheduled'], Sent: ['outreach_sent', 'Outreach sent'], Delivered: ['outreach_delivered', 'Outreach delivered'], Responded: ['outreach_responded', 'Outreach response recorded'], 'Opted out': ['outreach_opted_out', 'Outreach opt-out recorded'] };
+      const [type, title] = labels[status] || ['outreach_updated', 'Outreach updated'];
+      logActivity({ type, title, href: '/researcher/outreach', participantId: target.item.profileId, trialId: target.item.trialId, publicSite: target.item.publicSite, researcherId: target.item.researcherId, timestamp: status === 'Scheduled' && scheduledAt ? scheduledAt : now });
+    }
   }
   function toggleSelection(key) { setSelectedRows(rows => rows.includes(key) ? rows.filter(item => item !== key) : [...rows, key]); }
   function applyBulk(status) { const valid = selection.filter(row => row.eligible); valid.forEach(row => record(status, row)); setBulkNotice(valid.length ? `${valid.length} draft${valid.length === 1 ? '' : 's'} marked ${status.toLowerCase()}.` : 'Select at least one eligible recipient first.'); }
@@ -103,6 +110,7 @@ export default function OutreachCenter({ Sidebar }) {
   function completeCycle() {
     const completedAt = new Date().toISOString();
     const cycle = { id: `CYCLE-${Date.now().toString(36).toUpperCase()}`, researcherId: recipients[0]?.item.researcherId || 'demo-researcher', completedAt, fictional: true, finalists: recipients.map(row => ({ syntheticParticipantId: row.item.profileId, fictionalName: profileName(row.profile), nctId: row.item.trialId, trialTitle: row.item.trialTitle, publicSite: row.item.publicSite, deterministicOutcome: row.item.deterministicOutcome, requirementCounts: row.item.counts, simulatedOutreachStatus: row.status, simulatedOutreachHistory: row.record.events || [] })) };
+    logActivity({ type: 'recruitment_cycle_completed', title: 'Recruitment cycle completed', href: '/researcher/outreach', researcherId: cycle.researcherId, timestamp: completedAt });
     localStorage.setItem(ARCHIVE_KEY, JSON.stringify([cycle, ...archives])); localStorage.removeItem(HISTORY_KEY); clearFinalistSelections(); resetActiveRecruitmentWorkflow(); sessionStorage.setItem('vitra-cycle-reset-notice', 'Outreach cycle completed. Active recruitment workflow has been reset. Archived history is available in Outreach Center.'); location.assign('/researcher/screening');
   }
   const summary = { finalists: recipients.length, trials: [...new Set(recipients.map(row => row.item.trialId))], sites: [...new Set(recipients.map(row => row.item.publicSite))], statuses: recipients.reduce((all, row) => ({ ...all, [row.status]: (all[row.status] || 0) + 1 }), {}) };

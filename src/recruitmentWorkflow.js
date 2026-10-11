@@ -49,7 +49,12 @@ export function screeningSourceStatus(trialId, profile) {
 export function readAiReviewQueue() { return readJson(AI_REVIEW_QUEUE_KEY, {}); }
 export function setAiReviewReady({ trialId, profileId, ready }) {
   const key = shortlistKey(trialId, profileId); const queue = readAiReviewQueue();
-  if (ready) queue[key] = { trialId, profileId, readyAt: new Date().toISOString(), status: 'Ready for AI Fit Review' };
+  const alreadyReady = Boolean(queue[key]);
+  if (ready) {
+    const readyAt = new Date().toISOString();
+    queue[key] = { trialId, profileId, readyAt, status: 'Ready for AI Fit Review' };
+    if (!alreadyReady) logActivity({ type: 'screening_ready_for_ai', title: 'Ready for AI Fit Review', href: '/researcher/ai-fit-review', participantId: profileId, trialId, timestamp: readyAt });
+  }
   else delete queue[key];
   localStorage.setItem(AI_REVIEW_QUEUE_KEY, JSON.stringify(queue));
   window.dispatchEvent(new Event(AI_REVIEW_EVENT));
@@ -67,3 +72,4 @@ export function resetActiveRecruitmentWorkflow() {
   localStorage.removeItem(SCREENING_QUEUE_KEY);
   window.dispatchEvent(new Event(AI_REVIEW_EVENT));
 }
+import { logActivity } from './activityLog';
