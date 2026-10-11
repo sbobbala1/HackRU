@@ -5,6 +5,7 @@ import WorkplaceBadge from './WorkplaceBadge';
 import { profileName, readActiveRecruitmentCycle, readAiReviewQueue, readScreeningQueue, resetActiveRecruitmentWorkflow, screeningSourceStatus } from './recruitmentWorkflow';
 import { clearFinalistSelections, finalistEvent, readFinalistSelections } from './finalistSelections';
 import { logActivity } from './activityLog';
+import { navigate } from './navigation';
 import './outreach-center.css';
 
 const HISTORY_KEY = 'vitra-outreach-history-v1';
@@ -46,6 +47,7 @@ export default function OutreachCenter({ Sidebar }) {
   const [body, setBody] = useState('');
   const [scheduledFor, setScheduledFor] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
+  const [completionError, setCompletionError] = useState('');
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archives, setArchives] = useState(() => readJson(ARCHIVE_KEY, []));
   const [bulkNotice, setBulkNotice] = useState('');
@@ -130,18 +132,17 @@ export default function OutreachCenter({ Sidebar }) {
       localStorage.setItem(ARCHIVE_KEY, JSON.stringify(nextArchives));
       setArchives(nextArchives);
     } catch {
-      setBulkNotice('Archive could not be saved. Your active workflow was not cleared.');
-      setConfirmReset(false);
+      setCompletionError('The cycle archive could not be saved. Your active workflow is unchanged; free some browser storage and try again.');
       return;
     }
     logActivity({ type: 'recruitment_cycle_completed', title: 'Recruitment cycle completed', href: '/researcher/outreach', researcherId: cycle.researcherId, timestamp: completedAt });
-    localStorage.removeItem(HISTORY_KEY); clearFinalistSelections(); resetActiveRecruitmentWorkflow(); sessionStorage.setItem('vitra-cycle-reset-notice', 'Outreach cycle completed. Your active recruitment workspace has been reset.'); location.assign('/researcher/screening');
+    localStorage.removeItem(HISTORY_KEY); clearFinalistSelections(); resetActiveRecruitmentWorkflow(); sessionStorage.setItem('vitra-cycle-reset-notice', 'Outreach cycle completed. Your active recruitment workspace has been reset.'); setConfirmReset(false); navigate('/researcher/screening');
   }
   const summary = { finalists: recipients.length, trials: [...new Set(recipients.map(row => row.item.trialId))], sites: [...new Set(recipients.map(row => row.item.publicSite))], statuses: recipients.reduce((all, row) => ({ ...all, [row.status]: (all[row.status] || 0) + 1 }), {}) };
 
   const cycleControls = <>
-    <section className="cycle-completion-card"><button className="btn secondary" disabled={!canCompleteCycle} onClick={() => setConfirmReset(true)}>Complete outreach cycle</button>{!canCompleteCycle && <small>No active outreach cycle to complete.</small>}</section>
-    {confirmReset && <div className="cycle-modal" role="dialog" aria-modal="true" aria-labelledby="cycle-modal-title"><section><span className="eyebrow">Confirm cycle completion</span><h2 id="cycle-modal-title">Complete this outreach cycle?</h2><p>Completing this cycle archives the current workflow and clears active recruitment records so you can begin a new cycle.</p><dl><div><dt>Participants in active workflow</dt><dd>{activeWorkflowCount}</dd></div><div><dt>AI Fit Review records</dt><dd>{Object.keys(readAiReviewQueue()).length}</dd></div><div><dt>Final Matches</dt><dd>{summary.finalists}</dd></div><div><dt>Outreach drafts</dt><dd>{Object.keys(history).length}</dd></div><div><dt>Trials / NCT IDs</dt><dd>{summary.trials.join(', ') || 'None'}</dd></div><div><dt>Public study sites</dt><dd>{summary.sites.join(' Ã‚Â· ') || 'None'}</dd></div><div><dt>Current statuses</dt><dd>{Object.entries(summary.statuses).map(([status, count]) => `${displayStatus(status)}: ${count}`).join(' Ã‚Â· ') || 'None'}</dd></div><div><dt>Completion time</dt><dd>{new Date().toLocaleString()}</dd></div></dl><div className="outreach-actions"><button className="btn" onClick={completeCycle}>Complete and reset cycle</button><button className="btn secondary" onClick={() => setConfirmReset(false)}>Cancel</button></div></section></div>}
+    <section className="cycle-completion-card"><button className="btn secondary" disabled={!canCompleteCycle} onClick={() => { setCompletionError(''); setConfirmReset(true); }}>Complete outreach cycle</button>{!canCompleteCycle && <small>No active outreach cycle to complete.</small>}</section>
+    {confirmReset && <div className="cycle-modal" role="dialog" aria-modal="true" aria-labelledby="cycle-modal-title"><section><span className="eyebrow">Confirm cycle completion</span><h2 id="cycle-modal-title">Complete this outreach cycle?</h2><p>Completing this cycle archives the current workflow and clears active recruitment records so you can begin a new cycle.</p>{completionError && <div className="form-error" role="alert">{completionError}</div>}<dl><div><dt>Participants in active workflow</dt><dd>{activeWorkflowCount}</dd></div><div><dt>AI Fit Review records</dt><dd>{Object.keys(readAiReviewQueue()).length}</dd></div><div><dt>Final Matches</dt><dd>{summary.finalists}</dd></div><div><dt>Outreach drafts</dt><dd>{Object.keys(history).length}</dd></div><div><dt>Trials / NCT IDs</dt><dd>{summary.trials.join(', ') || 'None'}</dd></div><div><dt>Public study sites</dt><dd>{summary.sites.join(' Ã‚Â· ') || 'None'}</dd></div><div><dt>Current statuses</dt><dd>{Object.entries(summary.statuses).map(([status, count]) => `${displayStatus(status)}: ${count}`).join(' Ã‚Â· ') || 'None'}</dd></div><div><dt>Completion time</dt><dd>{new Date().toLocaleString()}</dd></div></dl><div className="outreach-actions"><button className="btn" onClick={completeCycle}>Complete and reset cycle</button><button className="btn secondary" onClick={() => setConfirmReset(false)}>Cancel</button></div></section></div>}
     {archiveOpen && <div className="cycle-modal" role="dialog" aria-modal="true" aria-labelledby="archive-modal-title"><section className="archive-modal"><span className="eyebrow">Read-only archive</span><h2 id="archive-modal-title">Completed cycles</h2>{archives.length ? archives.map(cycle => <article key={cycle.cycleId}><b>{cycle.cycleId}</b><small>{new Date(cycle.completedAt).toLocaleString()} Ã‚Â· {cycle.researcherId}</small><p><small>{cycle.participants?.length || 0} participants Ã‚Â· {cycle.trials?.map(trial => trial.nctId).join(', ') || 'No trial records'} Ã‚Â· {Object.entries(cycle.summary?.messagesByChannel || {}).map(([channelName,count]) => `${channelName}: ${count}`).join(' Ã‚Â· ') || 'No outreach messages'}</small></p><button className="btn secondary" onClick={() => downloadArchiveCsv(cycle)}>Download CSV</button><button className="btn secondary" onClick={() => window.print()}>Print / save PDF</button>{(cycle.participants || []).map(item => <p key={`${cycle.cycleId}-${item.syntheticParticipantId}-${item.trialNctId}`}><b>{item.fictionalParticipantName}</b> Ã‚Â· {item.syntheticParticipantId} Ã‚Â· {item.trialNctId} Ã‚Â· {item.publicSite}<br/><small>{item.aiFitReviewStatus} Ã‚Â· {item.outreachStatus} Ã‚Â· MET {item.deterministicEvidenceSummary?.met ?? 0}, NOT MET {item.deterministicEvidenceSummary?.notMet ?? 0}, UNKNOWN {item.deterministicEvidenceSummary?.unknown ?? 0}</small></p>)}</article>) : <p>No completed recruitment cycles yet.</p>}<button className="btn secondary" onClick={() => setArchiveOpen(false)}>Close archive</button></section></div>}
   </>;
 
