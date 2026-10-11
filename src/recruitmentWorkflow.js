@@ -68,7 +68,7 @@ export function readScreeningQueue() {
 
 export function screeningSourceStatus(trialId, profile) {
   if (!profile?.demo_consent || availabilityFor(profile) !== 'Available') return 'Not advancing';
-  const cleared = new Set(['SYN-001', 'SYN-007', 'SYN-013', 'SYN-014', 'SYN-016']);
+  const cleared = new Set(['SYN-001', 'SYN-007', 'SYN-013', 'SYN-014', 'SYN-016', 'SYN-019', 'SYN-020', 'SYN-021', 'SYN-022', 'SYN-023', 'SYN-024', 'SYN-025', 'SYN-026', 'SYN-029']);
   if (cleared.has(profile.profile_id)) return 'Screening workflow cleared';
   if (profile.profile_id === 'SYN-009') return 'Needs study-team follow-up';
   return 'Not reviewed';
