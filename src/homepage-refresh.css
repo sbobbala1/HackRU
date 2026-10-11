@@ -1,0 +1,25 @@
+/* Editorial hero refresh: original Vitra research illustration generated for this page. */
+.home-hero{display:block;min-height:645px;padding:116px clamp(24px,8vw,128px);background-color:#082749;background-position:center;background-size:cover}
+.home-hero-copy{position:relative;z-index:2;max-width:650px}.home-hero h1{max-width:640px;font-size:clamp(3.45rem,5.25vw,5.7rem);line-height:1.02}.home-hero-copy>p{max-width:590px;font-size:1.13rem}.home-hero-visual{display:none}.home-kicker{background:#071d3b72;border-color:#9eeee35c}.home-actions .btn{border-radius:6px}.home-actions .btn.secondary{background:#061d3b8a;backdrop-filter:blur(6px)}
+.home-proof{padding:25px clamp(24px,8vw,128px);gap:42px;background:#fff;border-bottom:1px solid var(--line);color:#365264}.home-proof span{color:#087d75}.home-proof b{position:relative;font-size:.8rem}.home-proof b:not(:last-child):after{content:'';position:absolute;top:50%;right:-22px;width:4px;height:4px;border-radius:50%;background:#89b7bd}
+.home-paths{padding-top:82px;padding-bottom:76px}.home-section-heading h2{font-size:clamp(2.2rem,3.4vw,3.45rem);max-width:720px}.path-card{padding:37px;box-shadow:0 14px 35px #1534470a}.path-card h3{font-size:1.95rem}.home-how{padding-top:76px;padding-bottom:76px}.home-safety{margin-bottom:68px}
+.home-paths-centered{padding-top:82px;padding-bottom:84px}
+.home-paths-intro{max-width:1040px;margin:0 auto;text-align:center}
+.home-paths-intro>.eyebrow{justify-content:center}
+.home-paths-intro h2{max-width:900px;margin:14px auto 13px;color:#173b8d;font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.25rem,4.3vw,4rem);font-weight:600;letter-spacing:-.035em;line-height:1.1}
+.home-paths-intro>p{max-width:1040px;margin:0 auto;color:#5f626b;font-size:clamp(.98rem,1.35vw,1.13rem);line-height:1.65}
+.home-paths-main-cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;margin-top:26px;padding:0 28px;border-radius:6px;background:#182eaa;color:#fff;font-weight:700;text-decoration:none;transition:background .16s,transform .16s}
+.home-paths-main-cta:hover{transform:translateY(-1px);background:#10258f}
+.home-paths-centered .path-grid{max-width:1160px;margin:58px auto 0;gap:22px}
+.home-paths-centered .path-card{display:flex;min-height:490px;flex-direction:column;align-items:center;padding:42px 38px 36px;border:1.5px solid #2839b4;border-radius:24px;background:#fff;box-shadow:none;text-align:center}
+.home-paths-centered .researcher-path{background:#fff}
+.path-icon-circle{display:grid;place-items:center;width:128px;height:128px;margin:0 auto 27px;border:2px solid #2639b0;border-radius:50%;color:#2639b0}
+.patient-path .path-icon-circle{background:#2639b0;color:#fff}
+.home-paths-centered .path-label{margin-bottom:8px;color:#2639b0;font-size:.78rem}
+.home-paths-centered .path-card h3{max-width:470px;margin:9px auto 12px;color:#2639b0;font-family:'DM Sans',sans-serif;font-size:clamp(1.65rem,2.4vw,2.15rem);line-height:1.2}
+.home-paths-centered .path-card>p{max-width:500px;margin:0 auto;color:#555c68;font-size:.98rem;line-height:1.65}
+.path-card-action{margin-top:auto;padding-top:28px}
+.home-paths-centered .path-card-action .btn{min-width:240px;justify-content:center;border-radius:6px;background:#182eaa;color:#fff}
+.home-paths-centered .researcher-path .path-card-action .btn{border:1px solid #182eaa;background:#fff;color:#182eaa}
+@media(max-width:900px){.home-hero{min-height:560px;padding-top:90px;background-position:63% center}.home-hero h1{font-size:clamp(3rem,8vw,4.7rem)}.home-proof{gap:20px}.home-proof b:not(:last-child):after{display:none}}
+@media(max-width:630px){.home-hero{min-height:590px;padding:72px 22px;background-position:68% center}.home-hero h1{font-size:2.95rem}.home-hero-copy>p{font-size:1rem}.home-proof{display:grid;grid-template-columns:1fr;padding:25px 22px}.path-card{padding:26px}.home-paths-centered{padding-top:64px;padding-bottom:66px}.home-paths-centered .path-grid{margin-top:38px}.home-paths-centered .path-card{min-height:0;padding:34px 24px;border-radius:19px}.path-icon-circle{width:106px;height:106px;margin-bottom:22px}.home-paths-centered .path-card-action{padding-top:24px}.home-paths-centered .path-card-action .btn{min-width:0}}

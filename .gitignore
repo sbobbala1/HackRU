@@ -3,3 +3,10 @@ dist/
 .DS_Store
 __pycache__/
 *.py[cod]
+.env
+.env.local
+*.env.local
+serviceAccountKey.json
+node_modules/
+test-results/
+playwright-report/

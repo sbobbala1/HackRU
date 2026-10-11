@@ -1,1 +1,1 @@
-"""ProtocolMatch AI FastAPI backend."""
+"""Vitra FastAPI backend."""

@@ -4,6 +4,11 @@ The browser never reads match results directly. Firebase Authentication tokens a
 verified here and Firestore Admin access is used only after role and consent checks.
 """
 from datetime import datetime, timezone
+import os
+import json
+import hashlib
+from pathlib import Path
+from .synthetic_patients import import_bundle, match_normalized
 from typing import Literal
 
 import firebase_admin
@@ -12,12 +17,92 @@ from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import auth, credentials, firestore
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 from .eligibility_parser import ParsedEligibility, parse_deterministic
+from .eligibility_matcher import ParsedMatch, SyntheticProfile, match_parsed_eligibility, rank_profiles
+from .llm_assist import suggest_criterion_types, summarize_match
+from .trial_explainer import answer_trial_question
+
+load_dotenv(Path(__file__).resolve().parent.parent / '.env')
 
 app = FastAPI(title="Vitra API", version="0.1.0")
+
+@app.get('/demo/studies/{nct_id}/evaluate')
+def evaluate_demo(nct_id: str):
+    from .demo import run_demo
+    try:
+        return run_demo(nct_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+class ExplainerSource(BaseModel):
+    id: str = Field(pattern=r'^S[1-6]$')
+    path: str = Field(max_length=150)
+    quote: str = Field(min_length=1, max_length=20000)
+
+class ExplainerInput(BaseModel):
+    nct_id: str = Field(pattern=r'^NCT\d{8}$')
+    question: str = Field(min_length=1,max_length=2000)
+    language: str = Field(default='en',max_length=10)
+    demo: bool = False
+
+@app.post('/trials/explain')
+def explain_trial(payload: ExplainerInput):
+    try:
+        if payload.demo:
+            from .demo import cached_record
+            from .trial_explainer import source_answer, source_fields
+            record = cached_record(payload.nct_id)
+            if payload.language != 'en':
+                return answer_trial_question(payload.nct_id, payload.question, payload.language, record=record)
+            result = source_answer(payload.nct_id, payload.question, source_fields(record))
+            result['notice'] = 'Deterministic demo: original cached study excerpts, no LLM request.'
+            return result
+        return answer_trial_question(payload.nct_id, payload.question, payload.language)
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(502, str(exc)) from exc
+    except Exception as exc:
+        # Do not expose secrets, provider response bodies, or arbitrary exception text.
+        name=type(exc).__name__
+        message='Unable to read the trial record or generate an AI answer. Check connectivity and retry.'
+        if name=='AuthenticationError': message='OpenAI rejected the backend API key. Check backend/.env and restart the backend.'
+        elif name=='RateLimitError': message='OpenAI quota or rate limit reached. Check API billing and retry shortly.'
+        elif name in ('APITimeoutError','TimeoutError'): message='The trial or AI request timed out. Please retry.'
+        raise HTTPException(502,message) from exc
+class SyntheticImportInput(BaseModel):
+    bundle: dict
+    synthetic_attested: bool = False
+    demo: bool = False
+
+class SyntheticMatchInput(SyntheticImportInput):
+    parsed: ParsedEligibility
+
+@app.get('/synthetic/patients/demo')
+def demo_patients(demo: bool = False):
+    from .demo import DEMO_DATE
+    bundles = json.loads((Path(__file__).parent / 'data' / 'synthetic_demo.json').read_text())
+    return {'profiles': [import_bundle(b, True, DEMO_DATE if demo else None) for b in bundles], 'bundles': bundles}
+
+@app.post('/synthetic/patients/import')
+def import_patient(payload: SyntheticImportInput):
+    try:
+        from .demo import DEMO_DATE
+        return import_bundle(payload.bundle, payload.synthetic_attested, DEMO_DATE if payload.demo else None)
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(422, 'Invalid synthetic FHIR Bundle: ' + str(exc)) from exc
+
+@app.post('/synthetic/patients/match')
+def match_imported_patient(payload: SyntheticMatchInput):
+    try:
+        from .demo import DEMO_DATE
+        return match_normalized(payload.parsed, import_bundle(payload.bundle, payload.synthetic_attested, DEMO_DATE if payload.demo else None))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(422, 'Invalid synthetic FHIR Bundle: ' + str(exc)) from exc
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # replace/add Hosting domain in production
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],  # replace/add Hosting domain in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,14 +146,53 @@ class InvitationInput(BaseModel):
     participant_id: str
     preview: str = Field(max_length=1000)
 
+class FinalistSelectionInput(BaseModel):
+    profileId: str = Field(min_length=1, max_length=80)
+    trialId: str = Field(pattern=r'^NCT\d{8}$')
+    trialTitle: str = Field(min_length=1, max_length=500)
+    publicSite: str = Field(min_length=1, max_length=600)
+    consent: Literal[True]
+    availability: Literal['Available']
+    deterministicOutcome: Literal['Potential Match']
+    counts: dict[str, int] = Field(default_factory=dict)
+    sourceRetrievedAt: str | None = Field(default=None, max_length=80)
+    selectedAt: str = Field(min_length=1, max_length=80)
+    selectedBy: str = Field(min_length=1, max_length=200)
+    selectionStatus: Literal['Finalist selected']
+    outreachDraftStatus: Literal['Draft created']
+
 class EligibilityParseInput(BaseModel):
     study_id: str = Field(min_length=1, max_length=64)
-    original_eligibility_text: str = Field(max_length=50000)
+    original_eligibility_text: str = Field(min_length=1, max_length=50000)
+    use_ai: bool = False
+
+class ParsedMatchInput(BaseModel):
+    parsed: ParsedEligibility
+    profile: SyntheticProfile
+
+class TrialRankingInput(BaseModel):
+    study_nct_id: str = Field(min_length=1, max_length=64)
+    source_url: str | None = None
+    eligibility_text: str = Field(min_length=1, max_length=50000)
+    profiles: list[SyntheticProfile] = Field(min_length=1, max_length=100)
+    evaluation_date: datetime | None = None
+    use_ai: bool = False
+
+def _attach_llm_suggestions(parsed: ParsedEligibility, source_text: str) -> None:
+    suggestions = suggest_criterion_types(source_text) or []
+    by_source = {item.get('source_text'): item.get('category') for item in suggestions}
+    # Require verbatim source text; hints are displayed to reviewers but never drive state evaluation.
+    for criterion in parsed.criteria:
+        category = by_source.get(criterion.original_text)
+        if category:
+            criterion.llm_category_suggestion = category
+            parsed.llm_suggestions.append({'source_text': criterion.original_text, 'category': category, 'logic': next((x.get('logic') for x in suggestions if x.get('source_text') == criterion.original_text), 'unknown')})
+    parsed.parser = 'llm_structured_output' if parsed.llm_suggestions else 'deterministic'
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "Vitra API"}
+    return {"status": "ok", "service": "Vitra API", "workflow_version": "qa-workflow-1"}
 
 @app.post("/eligibility/parse", response_model=ParsedEligibility)
 def parse_eligibility(payload: EligibilityParseInput):
@@ -78,7 +202,36 @@ def parse_eligibility(payload: EligibilityParseInput):
     validate it against ParsedEligibility, and retain original_text for every rule.
     The fallback is intentionally conservative and flags ambiguous wording.
     """
-    return parse_deterministic(payload.study_id, payload.original_eligibility_text)
+    parsed = parse_deterministic(payload.study_id, payload.original_eligibility_text)
+    if payload.use_ai and (os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY')):
+        try:
+            _attach_llm_suggestions(parsed, payload.original_eligibility_text)
+        except Exception:
+            parsed.parser = 'deterministic'
+    return parsed
+
+@app.post('/eligibility/match', response_model=ParsedMatch)
+def match_eligibility(payload: ParsedMatchInput):
+    return match_parsed_eligibility(payload.parsed, payload.profile)
+
+@app.post('/eligibility/rank', response_model=list[ParsedMatch])
+def rank_eligibility(payload: TrialRankingInput):
+    parsed = parse_deterministic(payload.study_nct_id, payload.eligibility_text)
+    if payload.use_ai and (os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY')):
+        try:
+            _attach_llm_suggestions(parsed, payload.eligibility_text)
+        except Exception:
+            pass
+    results = rank_profiles(parsed, payload.profiles, payload.source_url, payload.evaluation_date.date() if payload.evaluation_date else None)
+    if payload.use_ai and (os.getenv('GEMINI_API_KEY') or os.getenv('OPENAI_API_KEY')):
+        for result in results:
+            result.parser = parsed.parser
+            result.llm_suggestions = parsed.llm_suggestions
+            try:
+                result.llm_explanation = summarize_match(result.model_dump())
+            except Exception:
+                result.llm_explanation = None
+    return results
 
 
 @app.post("/trials", status_code=status.HTTP_201_CREATED)
@@ -143,3 +296,25 @@ def record_invitation(trial_id: str, invitation: InvitationInput, user: dict = D
         "status": "recorded", "created_by": user["uid"], "created_at": datetime.now(timezone.utc),
     })
     return {"status": "recorded", "message": "No outbound message is sent by this API."}
+
+@app.get('/researcher/finalists')
+def list_finalists(user: dict = Depends(require_researcher)):
+    """Return only this researcher's fictional finalist selections and simulated drafts."""
+    rows = db().collection('researcherFinalists').document(user['uid']).collection('selections').stream()
+    return {'selections': [{'id': row.id, **row.to_dict()} for row in rows], 'disclaimer': 'Fictional demo data only. No message is sent by this API.'}
+
+@app.post('/researcher/finalists', status_code=status.HTTP_201_CREATED)
+def save_finalist(payload: FinalistSelectionInput, user: dict = Depends(require_researcher)):
+    """Atomically upsert a strictly validated finalist selection and its simulated draft."""
+    fingerprint = f"{user['uid']}|{payload.profileId}|{payload.trialId}|{payload.publicSite}"
+    selection_id = hashlib.sha256(fingerprint.encode()).hexdigest()[:40]
+    record = payload.model_dump() | {'researcherId': user['uid'], 'updatedAt': datetime.now(timezone.utc), 'simulationOnly': True}
+    db().collection('researcherFinalists').document(user['uid']).collection('selections').document(selection_id).set(record, merge=True)
+    return {'id': selection_id, **payload.model_dump(), 'message': 'Finalist selection and simulated outreach draft recorded. No outbound message was sent.'}
+
+@app.delete('/researcher/finalists/{selection_id}')
+def remove_finalist(selection_id: str, user: dict = Depends(require_researcher)):
+    if not selection_id or len(selection_id) > 200:
+        raise HTTPException(422, detail='Invalid finalist selection identifier')
+    db().collection('researcherFinalists').document(user['uid']).collection('selections').document(selection_id).delete()
+    return {'status': 'removed'}
