@@ -32,6 +32,7 @@ import ClinicalTrialsWorkspace from './ClinicalTrialsWorkspace';
 import ScreeningWorkspace from './ScreeningWorkspace';
 import PotentialMatches from './PotentialMatches';
 import OutreachCenter from './OutreachCenter';
+import ResearcherOperationsDashboard from './ResearcherOperationsDashboard';
 import WorkplaceBadge from './WorkplaceBadge';
 import './researcher-workplace.css';
 import './about-faq.css';
@@ -226,7 +227,7 @@ function App(){
  if(p==='/patient/saved')return <SavedAndInterested/>;
  if(p==='/patient/settings')return <WorkspaceSettings role="patient"/>;
  if(p.startsWith('/trials/')){const id=p.split('/')[2];return /^NCT\d{8}$/i.test(id)?<OfficialTrialPage id={id.toUpperCase()}/>:<TrialDetails id={id}/>;}
- if(p==='/researcher/dashboard')return <ResearcherDashboard/>;
+ if(p==='/researcher/dashboard')return <ResearcherOperationsDashboard Sidebar={Side}/>;
  if(p==='/researcher/recruitment')return <PotentialMatches Sidebar={Side}/>;
  if(p==='/researcher/screening')return <ScreeningWorkspace Sidebar={Side}/>;
  if(p==='/researcher/outreach')return <OutreachCenter Sidebar={Side}/>;
