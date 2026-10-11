@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getClinicalTrial } from './services/clinicalTrials';
+import { searchClinicalTrials } from './services/clinicalTrials';
 import { api } from './services/api';
 import WorkplaceBadge from './WorkplaceBadge';
 import { locationMatchesWorkplace, publicSitesFromStudies, readWorkplace } from './researcherWorkspace';
@@ -11,6 +11,13 @@ const QUICK_QUESTIONS = [
   'What participation requirements are listed?',
   'What activities are described for participants?',
 ];
+const localSourceAnswer = (study, question) => {
+  const q = question.toLowerCase();
+  const needs = /require|eligible|particip|criteria/.test(q) ? study.eligibility : study.summary;
+  const heading = /require|eligible|particip|criteria/.test(q) ? 'Eligibility criteria' : 'Study summary';
+  const quote = needs && needs !== 'Not provided in the source' ? needs : 'The selected public record does not provide that detail.';
+  return { answer: `Here is the available ${heading.toLowerCase()} from the selected public record.`, claims: [{ text: quote, source_ids: ['S1'] }], citations: [{ id: 'S1', quote, label: heading }] };
+};
 
 export default function ClinicalTrialsWorkspace({ Sidebar }) {
   const [studies, setStudies] = useState([]);
@@ -34,11 +41,11 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all(STUDY_IDS.map(getClinicalTrial))
-      .then(rows => {
+    searchClinicalTrials({ pageSize: 50 })
+      .then(result => {
         if (!active) return;
-        setStudies(rows);
-        setSelectedStudyId(rows[0]?.nctId || '');
+        setStudies(result.studies);
+        setSelectedStudyId(result.studies[0]?.nctId || '');
       })
       .catch(reason => active && setError(reason.message));
     return () => { active = false; };
@@ -75,7 +82,8 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
       const response = await api.explainTrial(selectedStudy.nctId, promptedQuestion.trim());
       setAnswer(response);
     } catch (reason) {
-      setError(`Could not answer that question: ${reason.message}`);
+      setAnswer(localSourceAnswer(selectedStudy, promptedQuestion));
+      setError('The live explainer service is unavailable, so Vitra is showing the selected public record text directly.');
     } finally {
       setAnswering(false);
     }
@@ -83,7 +91,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
 
   return <div className="portal"><Sidebar role="researcher"/><main className="portal-main clinical-trials-workspace">
     <div className="page-head"><div><span className="eyebrow">Recruitment workflow · public study discovery</span><h1>Clinical Trials</h1><p>Browse public ClinicalTrials.gov studies around the selected workplace and ask source-linked questions beside the listings.</p></div><WorkplaceBadge/></div>
-    <div className="notice"><span><b>Public-source discovery only.</b> Hospital and clinic names are shown only when supplied by ClinicalTrials.gov. The trial chat summarizes the selected public record; it does not decide eligibility or medical suitability.</span></div>
+    <div className="notice"><span><b>Public-source discovery only.</b> {studies.length ? `${studies.length} public ClinicalTrials.gov studies are loaded for searching.` : 'Loading public ClinicalTrials.gov studies…'} Hospital and clinic names are shown only when supplied by ClinicalTrials.gov. The trial chat summarizes the selected public record; it does not decide eligibility or medical suitability.</span></div>
     {broadened && <div className="notice"><span><b>Broadened search:</b> Results are currently shown at the selected {scope} level rather than the exact public workplace context.</span></div>}
     {error && <div className="form-error">{error}</div>}
     <section className="clinical-trial-controls">

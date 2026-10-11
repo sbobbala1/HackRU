@@ -7,7 +7,6 @@ const API = 'https://clinicaltrials.gov/api/v2/studies';
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
 import snapshots from '../../backend/app/data/trial_snapshots.json' with { type: 'json' };
-import { demoMode } from './demoMode.js';
 
 /** @typedef {{id:string,nctId:string,title:string,officialTitle:string,summary:string,conditions:string[],status:string,phase:string[],type:string,locations:string[],locationDetails:{facility:string,city:string,stateOrRegion:string,country:string,postalCode:string,publicLocationText:string}[],eligibility:string,minAge:string,maxAge:string,studyUrl:string,source:string,retrievedAt:string}} ClinicalTrial */
 
@@ -64,11 +63,6 @@ async function getJson(url) {
     return {studies: records.filter(r => JSON.stringify(r.protocolSection).toLowerCase().includes(query) &&
       (!location || JSON.stringify(r.protocolSection.contactsLocationsModule || {}).toLowerCase().includes(location)) &&
       (!status || status.split(',').includes(r.protocolSection.statusModule.overallStatus))), cached: true};
-  }
-  if (demoMode) {
-    const value = fallback();
-    if (!value) throw new Error('This study is not bundled in deterministic demo mode. Choose one of the three cached studies.');
-    return value;
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
