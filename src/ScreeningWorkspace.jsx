@@ -21,10 +21,11 @@ export default function ScreeningWorkspace({ Sidebar }) {
   const [cycleContext, setCycleContext] = useState(readActiveRecruitmentContext);
 
   useEffect(() => {
+    if (!cycleContext?.study?.nctId) { setStudies([]); return undefined; }
     let active = true;
-    Promise.all(STUDIES.map(getClinicalTrial)).then(rows => active && setStudies(rows)).catch(reason => active && setError(reason.message));
+    getClinicalTrial(cycleContext.study.nctId).then(row => active && setStudies([row])).catch(reason => active && setError(reason.message));
     return () => { active = false; };
-  }, []);
+  }, [cycleContext?.study?.nctId]);
   useEffect(() => { const sync = () => setCycleContext(readActiveRecruitmentContext()); window.addEventListener(RECRUITMENT_CYCLE_EVENT, sync); return () => window.removeEventListener(RECRUITMENT_CYCLE_EVENT, sync); }, []);
   useEffect(() => {
     if (cycleNotice) sessionStorage.removeItem('vitra-cycle-reset-notice');
