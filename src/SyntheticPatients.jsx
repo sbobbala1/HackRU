@@ -6,19 +6,19 @@ import './synthetic-patients.css';
 
 export default function SyntheticPatients({ Sidebar }) {
   const [records, setRecords] = useState([]), [selected, setSelected] = useState(0);
-  const [attested, setAttested] = useState(false), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const [attested, setAttested] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false);
   const [criteria, setCriteria] = useState('Inclusion Criteria:\nAge 18 to 75 years.\nDiagnosis of type 2 diabetes.\nHbA1c >= 7.0% within 90 days.');
   const [match, setMatch] = useState(null);
   async function loadDemo() {
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setNotice('');
     try { const data = await api.syntheticDemo(); setRecords(data.profiles.map((p, i) => ({ profile: p, bundle: data.bundles[i] }))); setSelected(0); setMatch(null); }
-    catch (e) { setRecords(demoSnapshot.map((profile,i)=>({profile,bundle:demoBundles[i]}))); setSelected(0); setMatch(null); setError(`${e.message}. Showing fictional snapshot evaluated on 2026-10-10. Start the backend to import or run current matching.`); }
+    catch (e) { setRecords(demoSnapshot.map((profile,i)=>({profile,bundle:demoBundles[i]}))); setSelected(0); setMatch(null); setNotice(`${e.message} Showing a read-only fictional snapshot evaluated on 2026-10-10. Imports and current matching require the updated backend.`); }
     finally { setBusy(false); }
   }
   useEffect(() => { loadDemo(); }, []);
   async function upload(event) {
     const file = event.target.files?.[0]; if (!file) return;
-    setError(''); setBusy(true); setMatch(null);
+    setError(''); setNotice(''); setBusy(true); setMatch(null);
     try {
       if (!attested) throw new Error('Confirm synthetic-only data before importing');
       if (file.size > 5 * 1024 * 1024) throw new Error('Maximum file size is 5 MB');
@@ -28,7 +28,7 @@ export default function SyntheticPatients({ Sidebar }) {
     } catch (e) { setError(e.message); } finally { setBusy(false); event.target.value = ''; }
   }
   async function compare() {
-    setBusy(true); setError(''); setMatch(null);
+    setBusy(true); setError(''); setNotice(''); setMatch(null);
     try { const parsed = await api.parseEligibility('SYNTHETIC-DEMO-RULES', criteria); setMatch(await api.syntheticMatch(parsed, records[selected].bundle)); }
     catch (e) { setError(e.message); } finally { setBusy(false); }
   }
@@ -41,7 +41,7 @@ export default function SyntheticPatients({ Sidebar }) {
     <div className="page-head"><div><span className="eyebrow">Doctor workspace</span><h1>Synthetic patients</h1><p>All patients are fictional. These records are not a clinically representative population.</p></div></div>
     <div className="notice"><span><b>Synthetic data only.</b> Do not upload real medical records. Imports are processed in memory, are not saved to Firebase, and disappear when you leave this page. Official screening is required.</span></div>
     <section className="synthetic-import"><h2>Import a Synthea FHIR R4 patient</h2><label><input type="checkbox" checked={attested} onChange={e=>setAttested(e.target.checked)}/> I confirm this file contains fictional, synthetic records only.</label><label>One patient Bundle, JSON, up to 5 MB<input type="file" accept=".json,application/json" disabled={!attested || busy} onChange={upload}/></label><button className="btn secondary" onClick={loadDemo} disabled={busy}>Reload demo patients</button> <button className="btn secondary" onClick={download}>Download fictional examples</button><p>Downloaded examples are an array of three Bundles. Import one Bundle at a time.</p></section>
-    {error && <p role="alert" className="form-error">{error}</p>}{busy && <p role="status">Processing synthetic records…</p>}
+    {notice && <p role="status" className="notice synthetic-fallback-notice">{notice}</p>}{error && <p role="alert" className="form-error">{error}</p>}{busy && <p role="status">Processing synthetic records…</p>}
     {records.length>0 && <><label>Fictional patient<select value={selected} onChange={e=>{setSelected(Number(e.target.value));setMatch(null);}}>{records.map(({profile}, i)=><option key={i} value={i}>{profile.profile_id} · age {profile.age ?? 'unknown'}</option>)}</select></label>
     <section><h2>{p.profile_id}</h2><p>Age: {p.age ?? 'Unknown'} · Evaluated on {p.as_of} · Lab freshness policy: 90 days maximum</p><details><summary>Age source</summary><pre>{JSON.stringify(p.age_source,null,2)}</pre></details>{p.warnings.map((w,i)=><p key={i}>{w}</p>)}
     {['conditions','medications','procedures','observations'].map(kind=><section key={kind}><h3>{kind[0].toUpperCase()+kind.slice(1)}</h3>{!p[kind].length?<p>Not provided. No absence is inferred.</p>:<div className="table-wrap"><table><thead><tr><th>Evidence</th><th>Date / status</th><th>Validation</th><th>Provenance</th></tr></thead><tbody>{p[kind].map((x,i)=><tr key={i}><td>{x.label}<small>{x.code}</small>{kind==='observations'&&<><p>{x.value ?? 'Unknown'} {x.unit}</p><small>Original: {String(x.original_value ?? 'Unknown')} {x.original_unit} · {x.conversion}</small></>}</td><td>{x.date || 'Not provided'}<small>{x.status}</small></td><td>{x.issue || (kind==='observations'?'Usable for supported rules':'Source record retained')}</td><td><details><summary>View source reference</summary><pre>{JSON.stringify(x,null,2)}</pre></details></td></tr>)}</tbody></table></div>}</section>)}</section>

@@ -10,6 +10,9 @@ async function request(path, options = {}) {
     });
     if (!response.ok) {
       const detail = (await response.json().catch(() => ({}))).detail;
+      if (response.status === 404) {
+        throw new Error('The running Vitra backend is missing this API route. Restart it from the current project folder to enable live import and matching.');
+      }
       const fallback = [502, 503, 504].includes(response.status)
         ? 'The Vitra backend is unavailable. Restart npm.cmd run dev from the project folder and try again.'
         : 'The request could not be processed. Please retry.';
