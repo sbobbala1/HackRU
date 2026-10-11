@@ -110,7 +110,6 @@ function Side({role}) {
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
   {label:'RECRUITMENT',items:[['Screening','/researcher/screening'],['AI Fit Review','/researcher/ai-fit-review'],['Final Matches','/researcher/recruitment']]},
   {label:'OUTREACH',items:[['Outreach Center','/researcher/outreach']]},
-  {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
  ];
  const groups=role==='patient'?patientGroups:researcherGroups;
