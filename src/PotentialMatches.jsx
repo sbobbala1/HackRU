@@ -4,7 +4,7 @@ import { api } from './services/api';
 import { criteriaText } from './services/demoMode';
 import { patients } from './ExplainableMatchDemo';
 import WorkplaceBadge from './WorkplaceBadge';
-import { availabilityFor, profileName, saveAiSelection } from './recruitmentWorkflow';
+import { RECRUITMENT_CYCLE_EVENT, availabilityFor, profileName, readActiveRecruitmentContext, saveAiSelection } from './recruitmentWorkflow';
 import { finalistEvent, readFinalistSelections } from './finalistSelections';
 import './potential-matches.css';
 
@@ -15,6 +15,7 @@ export default function PotentialMatches({ Sidebar }) {
   const [finalists, setFinalists] = useState(readFinalistSelections);
   const [expanded, setExpanded] = useState(null);
   const [error, setError] = useState('');
+  const [cycleContext, setCycleContext] = useState(readActiveRecruitmentContext);
 
   useEffect(() => {
     let live = true;
@@ -24,6 +25,7 @@ export default function PotentialMatches({ Sidebar }) {
     }).catch(reason => live && setError(reason.message));
     return () => { live = false; };
   }, []);
+  useEffect(() => { const sync = () => setCycleContext(readActiveRecruitmentContext()); window.addEventListener(RECRUITMENT_CYCLE_EVENT, sync); return () => window.removeEventListener(RECRUITMENT_CYCLE_EVENT, sync); }, []);
   useEffect(() => {
     const sync = () => setFinalists(readFinalistSelections());
     window.addEventListener(finalistEvent, sync);
@@ -31,6 +33,7 @@ export default function PotentialMatches({ Sidebar }) {
   }, []);
 
   const rows = useMemo(() => loaded.map(row => ({ ...row, finalist: Object.values(finalists).find(item => item.profileId === row.result.profile_id && item.trialId === row.study.nctId) })).filter(row => row.finalist), [loaded, finalists]);
+  if (!cycleContext) return <div className="portal"><Sidebar role="researcher"/><main className="portal-main potential-matches-page"><div className="page-head"><div><span className="eyebrow">Recruitment workflow</span><h1>Final Matches</h1></div><WorkplaceBadge/></div><section className="empty"><h2>No Final Matches in the active cycle</h2><p>Choose a site and study in Data & Sites, then progress records through Screening and AI Fit Review.</p><button className="btn" onClick={() => location.assign('/researcher/sites')}>Open Data & Sites</button></section></main></div>;
   return <div className="portal"><Sidebar role="researcher"/><main className="portal-main potential-matches-page">
     <div className="page-head"><div><span className="eyebrow">Recruitment workflow · Screening → AI Fit Review → Final Matches</span><h1>Final Matches</h1></div><div className="final-header"><WorkplaceBadge/><button className="btn" disabled={!rows.length} onClick={() => location.assign('/researcher/outreach')}>Open Outreach Center ({rows.length})</button></div></div>
     {error && <div className="form-error">{error}</div>}

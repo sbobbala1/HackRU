@@ -5,6 +5,7 @@ export const AI_REVIEW_QUEUE_KEY = 'vitra-ai-review-queue-v1';
 export const AI_REVIEW_EVENT = 'vitra-ai-review-change';
 export const RECRUITMENT_CYCLE_KEY = 'vitra-active-recruitment-cycle-v1';
 export const RECRUITMENT_CYCLE_EVENT = 'vitra-recruitment-cycle-change';
+export const RECRUITMENT_CONTEXT_KEY = 'vitra-active-recruitment-context-v1';
 
 export function readActiveRecruitmentCycle() {
   const current = readJson(RECRUITMENT_CYCLE_KEY, null);
@@ -12,6 +13,23 @@ export function readActiveRecruitmentCycle() {
   const created = { id: `CYCLE-${Date.now().toString(36).toUpperCase()}`, startedAt: new Date().toISOString() };
   localStorage.setItem(RECRUITMENT_CYCLE_KEY, JSON.stringify(created));
   return created;
+}
+
+export function readActiveRecruitmentContext() {
+  return readJson(RECRUITMENT_CONTEXT_KEY, null);
+}
+
+export function startRecruitmentCycleContext({ workplace, study }) {
+  const cycle = readActiveRecruitmentCycle();
+  const context = {
+    cycleId: cycle.id,
+    workplace: workplace ? { country: workplace.country, stateOrRegion: workplace.stateOrRegion, city: workplace.city, publicFacilityName: workplace.publicFacilityName, publicLocationText: workplace.publicLocationText } : null,
+    study: study ? { nctId: study.nctId, title: study.title, sourceUrl: study.studyUrl, retrievedAt: study.retrievedAt } : null,
+    selectedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(RECRUITMENT_CONTEXT_KEY, JSON.stringify(context));
+  window.dispatchEvent(new Event(RECRUITMENT_CYCLE_EVENT));
+  return context;
 }
 
 export function profileName(profile) {
@@ -80,6 +98,7 @@ export function resetActiveRecruitmentWorkflow() {
   localStorage.removeItem(AI_REVIEW_QUEUE_KEY);
   localStorage.removeItem(SHORTLIST_KEY);
   localStorage.removeItem(SCREENING_QUEUE_KEY);
+  localStorage.removeItem(RECRUITMENT_CONTEXT_KEY);
   const nextCycle = { id: `CYCLE-${Date.now().toString(36).toUpperCase()}`, startedAt: new Date().toISOString() };
   localStorage.setItem(RECRUITMENT_CYCLE_KEY, JSON.stringify(nextCycle));
   window.dispatchEvent(new Event(AI_REVIEW_EVENT));
