@@ -5,7 +5,7 @@ import re
 from datetime import date as Date, datetime, timedelta
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, FiniteFloat
 
 from .eligibility_parser import Criterion, ParsedEligibility
 
@@ -15,7 +15,7 @@ Category = Literal['Potential Match', 'Criteria Conflict', 'Needs More Informati
 
 class LabResult(BaseModel):
     name: str
-    value: float
+    value: float = Field(allow_inf_nan=False)
     unit: str | None = None
     date: Date | None = None
 
@@ -29,13 +29,13 @@ class MedicationEvidence(BaseModel):
 
 class SyntheticProfile(BaseModel):
     profile_id: str
-    age: int | None = None
+    age: int | None = Field(default=None, ge=0, le=120)
     conditions: list[str] | None = None
     conditions_complete: bool = False
     medications: list[str | MedicationEvidence] | None = None
     medications_complete: bool = False
     medication_history_complete: bool = False
-    labs: dict[str, float] | list[LabResult] | None = None
+    labs: dict[str, FiniteFloat] | list[LabResult] | None = None
     facts: dict[str, str | float | bool | Date | None] = Field(default_factory=dict)
 
 
@@ -79,15 +79,19 @@ def _norm(text: str) -> str:
 
 def _alias_match(target: str, value: str) -> bool:
     t, v = _norm(target), _norm(value)
+    if not t or not v: return False
+    t = re.sub(r'\s+mellitus\b', '', t)
+    v = re.sub(r'\s+mellitus\b', '', v)
     aliases = {'type 2 diabetes': ('type 2 diabetes', 'type 2 diabetes mellitus', 't2dm'), 'type 1 diabetes': ('type 1 diabetes', 'type 1 diabetes mellitus', 't1dm'), 'hba1c': ('hba1c', 'a1c', 'glycated hemoglobin'), 'osteoarthritis': ('osteoarthritis', 'osteo arthrosis'), 'corticosteroids': ('corticosteroid', 'prednisone', 'prednisolone', 'dexamethasone', 'methylprednisolone'), 'corticosteroid': ('corticosteroid', 'prednisone', 'prednisolone', 'dexamethasone', 'methylprednisolone'), 'glucocorticoids': ('corticosteroid', 'prednisone', 'prednisolone', 'dexamethasone', 'methylprednisolone')}
-    return any(_norm(a) in v or v in _norm(a) for a in aliases.get(t, (t,)))
+    aliases.update({'fasting glucose': ('fasting glucose', 'glucose'), 'blood glucose': ('blood glucose', 'glucose')})
+    return any(f' {_norm(a)} ' in f' {v} ' for a in aliases.get(t, (t,)))
 
 
 def _as_date(value) -> Date | None:
     if isinstance(value, datetime): return value.date()
     if isinstance(value, Date): return value
     if isinstance(value, str):
-        try: return date.fromisoformat(value[:10])
+        try: return Date.fromisoformat(value[:10])
         except ValueError: return None
     return None
 
@@ -96,7 +100,8 @@ def _convert_lab(value: float, source: str | None, target: str | None, analyte: 
     src = (source or '').lower().replace(' ', '')
     dst = (target or '').lower().replace(' ', '')
     name = _norm(analyte)
-    if not dst or src == dst: return value
+    if not dst or not src: return None
+    if src == dst: return value
     if name in ('hba1c', 'a1c') and src in ('fraction', 'ratio') and dst == '%' and value <= 1: return value * 100
     if name in ('glucose', 'fasting glucose', 'blood glucose') and src in ('mmol/l', 'mmolperliter') and dst == 'mg/dl': return value * 18.018
     if name in ('glucose', 'fasting glucose', 'blood glucose') and src in ('mg/dl', 'mgdl') and dst == 'mmol/l': return value / 18.018
@@ -118,7 +123,9 @@ def _row(c: Criterion, profile: SyntheticProfile, index: int, today: date) -> Ma
     requirement = c.requirement or c.category
     exclusion = c.section == 'exclusion'
 
-    if c.category == 'age' and c.value is not None:
+    if c.needs_manual_review:
+        missing = ['manual interpretation of original criterion']
+    elif c.category == 'age' and c.value is not None:
         fields = ['age']
         if profile.age is None:
             missing = ['age']; evidence = 'Age not supplied.'; reason = 'Age is required to evaluate this age criterion.'
@@ -160,7 +167,7 @@ def _row(c: Criterion, profile: SyntheticProfile, index: int, today: date) -> Ma
         if isinstance(profile.labs, list): results = profile.labs
         elif isinstance(profile.labs, dict):
             results = [LabResult(name=k, value=float(v), unit=('%' if _norm(k) in ('a1c','hba1c') else None)) for k, v in profile.labs.items() if v is not None]
-        matches = [x for x in results if _alias_match(requirement, x.name)]
+        matches = [x for x in results if _alias_match(requirement, x.name) and (x.date is None or x.date <= today)]
         if c.time_window and c.time_relation == 'within':
             m = re.search(r'(\d+)\s+(day|week|month|year)', c.time_window)
             cutoff = today - timedelta(days=int(m.group(1)) * {'day': 1, 'week': 7, 'month': 30, 'year': 365}[m.group(2)]) if m else None
@@ -197,6 +204,9 @@ def _row(c: Criterion, profile: SyntheticProfile, index: int, today: date) -> Ma
         if c.time_relation == 'within': fields.append('medication_history_complete')
         items = profile.medications or []
         meds = [x if isinstance(x, MedicationEvidence) else MedicationEvidence(name=str(x)) for x in items]
+        meds = [m.model_copy(update={'status': 'unknown'}) if
+                (m.start_date and m.start_date > today) or (m.end_date and m.end_date > today) or
+                (m.start_date and m.end_date and m.start_date > m.end_date) else m for m in meds]
         terms = c.alternatives or [requirement]
         window_match = re.search(r'(\d+)\s+(day|week|month|year)', c.time_window or '')
         window_days = int(window_match.group(1)) * {'day': 1, 'week': 7, 'month': 30, 'year': 365}[window_match.group(2)] if window_match else None

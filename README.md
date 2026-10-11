@@ -15,6 +15,20 @@ The doctor/researcher **Patients data** page imports synthetic FHIR R4 patient B
 
 Full-stack hackathon prototype: React/Vite frontend, Firebase Authentication and Firestore persistence, FastAPI for trusted match and invitation operations, and Firebase Hosting configuration.
 
+## Judging demo
+
+Stop old Vitra servers before reinstalling or restarting. In PowerShell, from the repository root:
+
+```powershell
+npm.cmd ci
+python -m pip install -r backend/requirements.txt
+npm.cmd run demo
+```
+
+Open `/demo` at the Local address printed in the terminal. This explicit demo mode bypasses Firebase sign-in for synthetic UI demonstrations only. Backend researcher authorization remains enforced. It uses dated public trial snapshots and synthetic FHIR records with a fixed evaluation date of 2026-10-10. No LLM key or external API connection is required after dependencies are installed. The local Python backend remains required. To use live services and normal Firebase sign-in, stop the demo and run `npm.cmd run dev`.
+
+See [QA results and remaining limitations](QA_REPORT.md).
+
 ## Run locally
 
 Install backend dependencies first: `python -m pip install -r backend/requirements.txt`. Configure the private key in `backend/.env`.

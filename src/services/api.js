@@ -1,3 +1,4 @@
+import { demoMode } from './demoMode.js';
 const API_URL = (import.meta.env?.VITE_API_URL || (import.meta.env?.DEV ? '/api' : 'http://localhost:8000')).replace(/\/$/, '');
 
 async function request(path, options = {}) {
@@ -28,14 +29,16 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  syntheticDemo: () => request('/synthetic/patients/demo'),
-  syntheticImport: (bundle) => request('/synthetic/patients/import', {method:'POST', body:JSON.stringify({bundle,synthetic_attested:true})}),
-  syntheticMatch: (parsed,bundle) => request('/synthetic/patients/match', {method:'POST', body:JSON.stringify({parsed,bundle,synthetic_attested:true})}),
-  explainTrial: (nctId,question,language='en',signal) => request('/trials/explain', {method:'POST',signal,body:JSON.stringify({nct_id:nctId,question,language})}),
+  demoEvaluate: id => request(`/demo/studies/${id}/evaluate`),
+  demoExplainTrial: (nctId, question) => request('/trials/explain', {method:'POST', body:JSON.stringify({nct_id:nctId,question,language:'en',demo:true})}),
+  syntheticDemo: () => request(`/synthetic/patients/demo?demo=${demoMode}`),
+  syntheticImport: (bundle) => request('/synthetic/patients/import', {method:'POST', body:JSON.stringify({bundle,synthetic_attested:true,...(demoMode?{demo:true}:{})})}),
+  syntheticMatch: (parsed,bundle) => request('/synthetic/patients/match', {method:'POST', body:JSON.stringify({parsed,bundle,synthetic_attested:true,...(demoMode?{demo:true}:{})})}),
+  explainTrial: (nctId,question,language='en',signal) => request('/trials/explain', {method:'POST',signal,body:JSON.stringify({nct_id:nctId,question,language,...(demoMode ? {demo:true} : {})})}),
   health: () => request('/health'),
   matchTrial: (trialId, token) => request(`/trials/${trialId}/matches`, { headers: { Authorization: `Bearer ${token}` } }),
   createTrial: (trial, token) => request('/trials', { method: 'POST', body: JSON.stringify(trial), headers: { Authorization: `Bearer ${token}` } }),
   parseEligibility: (studyId, originalEligibilityText) => request('/eligibility/parse', { method: 'POST', body: JSON.stringify({ study_id: studyId, original_eligibility_text: originalEligibilityText }) }),
   matchEligibility: (parsed, profile) => request('/eligibility/match', { method: 'POST', body: JSON.stringify({ parsed, profile }) }),
-  rankEligibility: (studyNctId, sourceUrl, eligibilityText, profiles) => request('/eligibility/rank', { method: 'POST', body: JSON.stringify({ study_nct_id: studyNctId, source_url: sourceUrl, eligibility_text: eligibilityText, profiles }) }),
+  rankEligibility: (studyNctId, sourceUrl, eligibilityText, profiles) => request('/eligibility/rank', { method: 'POST', body: JSON.stringify({ study_nct_id: studyNctId, source_url: sourceUrl, eligibility_text: eligibilityText, profiles, ...(demoMode?{evaluation_date:'2026-10-10T00:00:00Z'}:{}) }) }),
 };

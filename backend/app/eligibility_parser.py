@@ -52,6 +52,17 @@ def _criterion(line: str, section: str) -> Criterion:
     time_window = time.group(1) if time else duration.group(1) if duration else None
     time_relation = 'within' if time else 'duration' if duration else 'unknown'
     negated = bool(re.search(r'\b(no|without|absence of|free of|negative for|does not have|denies)\b', low))
+    # Do not reduce mixed predicates or exceptions to the first recognizable operand.
+    domains = sum(bool(re.search(pattern, low)) for pattern in (
+        r'\b(age|aged)\b',
+        r'\b(diabetes|asthma|cancer|hypertension|osteoarthritis|heart failure|chronic kidney disease)\b',
+        r'\b(hba1c|a1c|glucose|bmi|egfr|creatinine)\b',
+        r'\b(metformin|insulin|dulaglutide|tirzepatide|corticosteroids?|prednisone)\b',
+    ))
+    if domains > 1 or re.search(r'\b(unless|except|if applicable|at investigator|judgment|judgement)\b', low):
+        return Criterion(category='uncertain', original_text=line, section=section, needs_manual_review=True)
+    if re.search(r'\b(and|or)\b.*\b(no|without|denies)\b', low):
+        return Criterion(category='uncertain', original_text=line, section=section, needs_manual_review=True)
     if re.search(r'\b(age|aged)\b', low):
         age_range = re.search(r'\b(?:age|aged)\s*(?:of\s*)?(\d+)\s*(?:to|[-–])\s*(\d+)\s*years?', low)
         age_min = re.search(r'(?:age|aged)\s*(?:of\s*)?(?:≥|>=|at least)\s*(\d+)|(?:age|aged)\s*(\d+)\s*(?:years?\s*)?(?:or older|and older|or above)', low)
