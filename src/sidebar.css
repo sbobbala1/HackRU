@@ -24,3 +24,9 @@
 .account-menu{position:absolute;bottom:calc(100% + 7px);left:0;right:0;padding:5px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);z-index:8}
 .account-menu button{display:block;width:100%;padding:8px;background:transparent;border-radius:6px;text-align:left;color:#4f6976;font-size:.75rem}
 .account-menu button:hover{background:#eff7fa;color:var(--navy)}
+
+/* Keep navigation scrollable and the account control inside the viewport. */
+.side{height:100dvh;overflow:visible}
+.side-top,.workspace-switch,.side>.workplace-badge,.side-bottom{flex-shrink:0}
+.side-nav{flex:1;min-height:0;overflow-y:auto;align-content:start;overscroll-behavior:contain}
+.side-bottom{margin-top:0}
