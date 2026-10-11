@@ -7,7 +7,7 @@ const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}');
 const write = value => { localStorage.setItem(KEY, JSON.stringify(value)); window.dispatchEvent(new Event(EVENT)); };
 export const finalistEvent = EVENT;
 export const finalistKey = ({ researcherId, profileId, trialId, publicSite }) => [researcherId, profileId, trialId, publicSite || 'public-site-not-provided'].join('::');
-export const isSelectableFinalist = ({ profile, result, stage }) => Boolean(profile?.demo_consent) && (profile?.availability || 'Available') === 'Available' && result?.outcome === 'Potential Match' && stage === 'Ready for researcher follow-up';
+export const isSelectableFinalist = ({ profile, result, stage }) => Boolean(profile?.demo_consent) && (profile?.availability || 'Available') === 'Available' && result?.outcome === 'Potential Match' && stage === 'Screening workflow cleared';
 export const readFinalistSelections = () => read();
 
 export async function selectFinalist({ profile, study, result, publicSite, stage }) {
