@@ -107,7 +107,7 @@ function Side({role}) {
  ];
  const researcherGroups=[
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
-  {label:'RECRUITMENT',items:[['AI Fit Review','/researcher/ai-fit-review'],['Screening','/researcher/screening'],['Potential matches','/researcher/recruitment']]},
+  {label:'RECRUITMENT',items:[['Screening','/researcher/screening'],['AI Fit Review','/researcher/ai-fit-review'],['Final matches','/researcher/recruitment']]},
   {label:'TOOLS',items:[['Eligibility parser','/researcher/parser'],['Trial explainer','/researcher/explainer']]},
   {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
