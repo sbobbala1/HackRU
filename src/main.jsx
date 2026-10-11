@@ -200,6 +200,7 @@ function App(){
  if(p==='/researcher/explainer')return <TrialExplainer Sidebar={Side} role="researcher"/>;
  if(p==='/researcher/patients')return <SyntheticPatients Sidebar={Side}/>;
  if(p==='/researcher/parser')return <ExplainableMatchDemo Sidebar={Side}/>;
+ if(p==='/researcher/ai-fit-review')return <ExplainableMatchDemo Sidebar={Side} aiFitReview/>;
  if(p==='/researcher/trials/new')return <NewTrial/>;
  if(p.includes('/matches'))return <Matches id={p.split('/')[3]}/>;
  return <Landing/>;

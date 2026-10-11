@@ -40,5 +40,5 @@ export const api = {
   createTrial: (trial, token) => request('/trials', { method: 'POST', body: JSON.stringify(trial), headers: { Authorization: `Bearer ${token}` } }),
   parseEligibility: (studyId, originalEligibilityText) => request('/eligibility/parse', { method: 'POST', body: JSON.stringify({ study_id: studyId, original_eligibility_text: originalEligibilityText }) }),
   matchEligibility: (parsed, profile) => request('/eligibility/match', { method: 'POST', body: JSON.stringify({ parsed, profile }) }),
-  rankEligibility: (studyNctId, sourceUrl, eligibilityText, profiles) => request('/eligibility/rank', { method: 'POST', body: JSON.stringify({ study_nct_id: studyNctId, source_url: sourceUrl, eligibility_text: eligibilityText, profiles, ...(demoMode?{evaluation_date:'2026-10-10T00:00:00Z'}:{}) }) }),
+  rankEligibility: (studyNctId, sourceUrl, eligibilityText, profiles, useAi = false) => request('/eligibility/rank', { method: 'POST', body: JSON.stringify({ study_nct_id: studyNctId, source_url: sourceUrl, eligibility_text: eligibilityText, profiles, use_ai: useAi, ...(demoMode?{evaluation_date:'2026-10-10T00:00:00Z'}:{}) }) }),
 };
