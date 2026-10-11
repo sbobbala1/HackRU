@@ -108,7 +108,7 @@ function Side({role}) {
  const researcherGroups=[
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
   {label:'RECRUITMENT',items:[['Screening','/researcher/screening'],['AI Fit Review','/researcher/ai-fit-review'],['Final Matches','/researcher/recruitment']]},
-  {label:'TOOLS',items:[['Eligibility parser','/researcher/parser'],['Trial explainer','/researcher/explainer']]},
+  {label:'TOOLS',items:[['Trial explainer','/researcher/explainer']]},
   {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
  ];
@@ -234,7 +234,7 @@ function App(){
  if(p==='/researcher/explainer')return <TrialExplainer Sidebar={Side} role="researcher"/>;
  if(p==='/researcher/patients')return <SyntheticPatients Sidebar={Side}/>;
  if(p==='/researcher/sites')return <ResearchSites Sidebar={Side}/>;
- if(p==='/researcher/parser')return <ExplainableMatchDemo Sidebar={Side}/>;
+ if(p==='/researcher/parser')return <ExplainableMatchDemo Sidebar={Side} aiFitReview/>;
  if(p==='/researcher/ai-fit-review')return <ExplainableMatchDemo Sidebar={Side} aiFitReview/>;
  if(p==='/researcher/trials/new')return <NewTrial/>;
  if(p.includes('/matches'))return <Matches id={p.split('/')[3]}/>;
