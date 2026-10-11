@@ -3,6 +3,16 @@ export const SHORTLIST_KEY = 'vitra-potential-matches-v1';
 export const SCREENING_QUEUE_KEY = 'vitra-screening-queue-v1';
 export const AI_REVIEW_QUEUE_KEY = 'vitra-ai-review-queue-v1';
 export const AI_REVIEW_EVENT = 'vitra-ai-review-change';
+export const RECRUITMENT_CYCLE_KEY = 'vitra-active-recruitment-cycle-v1';
+export const RECRUITMENT_CYCLE_EVENT = 'vitra-recruitment-cycle-change';
+
+export function readActiveRecruitmentCycle() {
+  const current = readJson(RECRUITMENT_CYCLE_KEY, null);
+  if (current?.id) return current;
+  const created = { id: `CYCLE-${Date.now().toString(36).toUpperCase()}`, startedAt: new Date().toISOString() };
+  localStorage.setItem(RECRUITMENT_CYCLE_KEY, JSON.stringify(created));
+  return created;
+}
 
 export function profileName(profile) {
   return (profile?.display_name || `Participant ${profile?.profile_id || ''}`).replace(/\s*\(fictional\)/i, '').trim();
@@ -70,6 +80,10 @@ export function resetActiveRecruitmentWorkflow() {
   localStorage.removeItem(AI_REVIEW_QUEUE_KEY);
   localStorage.removeItem(SHORTLIST_KEY);
   localStorage.removeItem(SCREENING_QUEUE_KEY);
+  const nextCycle = { id: `CYCLE-${Date.now().toString(36).toUpperCase()}`, startedAt: new Date().toISOString() };
+  localStorage.setItem(RECRUITMENT_CYCLE_KEY, JSON.stringify(nextCycle));
   window.dispatchEvent(new Event(AI_REVIEW_EVENT));
+  window.dispatchEvent(new Event(RECRUITMENT_CYCLE_EVENT));
+  return nextCycle;
 }
 import { logActivity } from './activityLog';
