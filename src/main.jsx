@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import SyntheticPatients from './SyntheticPatients';
-import TrialExplainer from './TrialExplainer';
 import JudgingDemo from './JudgingDemo';
 import { demoMode } from './services/demoMode';
 import { readStored } from './services/storage';
@@ -104,13 +103,13 @@ function Side({role}) {
  const [account,setAccount]=useState(null);
  useEffect(()=>watchAuthState(setAccount),[]);
  const patientGroups=[
-  {label:'PATIENT WORKSPACE',items:[['Overview','/patient/dashboard'],['Find trials','/patient/trials'],['Trial explainer','/patient/explainer'],['Saved & interested','/patient/saved'],['My profile','/patient/profile']]},
+  {label:'PATIENT WORKSPACE',items:[['Overview','/patient/dashboard'],['Find trials','/patient/trials'],['Saved & interested','/patient/saved'],['My profile','/patient/profile']]},
   {label:'ACCOUNT',items:[['Settings','/patient/settings']]}
  ];
  const researcherGroups=[
   {label:'WORKSPACE',items:[['Overview','/researcher/dashboard'],['Clinical Trials','/researcher/trials'],['Data & sites','/researcher/sites']]},
   {label:'RECRUITMENT',items:[['Screening','/researcher/screening'],['AI Fit Review','/researcher/ai-fit-review'],['Final Matches','/researcher/recruitment']]},
-  {label:'OUTREACH',items:[['Outreach Center','/researcher/outreach'],['Trial explainer','/researcher/explainer']]},
+  {label:'OUTREACH',items:[['Outreach Center','/researcher/outreach']]},
   {label:'INSIGHTS',items:[['Recruitment analytics','/researcher/analytics']]},
   {label:'ACCOUNT',items:[['Profile & settings','/researcher/settings']]}
  ];
@@ -222,7 +221,7 @@ function App(){
  if(p==='/patient/onboarding')return <Onboarding/>;
  if(p==='/patient/dashboard')return <PatientDashboard/>;
  if(p==='/patient/trials')return <div className="portal"><Side role="patient"/><main className="portal-main"><div className="page-head"><div><span className="eyebrow">Patient workspace</span><h1>Find trials</h1><p>Explore official records and clearly labeled synthetic demo studies.</p></div></div><Notice/><LiveTrialSearch/><section className="section-row"><div><h2>Recommended demo trials</h2><p>Fictional listings included for the prototype walkthrough.</p></div></section><div className="cards">{trials.map(t=><TrialCard key={t.id} trial={t}/>)}</div></main></div>;
- if(p==='/patient/explainer')return <TrialExplainer Sidebar={Side}/>;
+ if(p==='/patient/explainer')return <div className="portal"><Side role="patient"/><main className="portal-main"><div className="page-head"><div><span className="eyebrow">Patient workspace</span><h1>Trial explainer moved</h1><p>Ask source-linked questions directly from Find trials.</p></div></div><button className="btn" onClick={()=>go('/patient/trials')}>Open Find trials</button></main></div>;
  if(p==='/patient/profile')return <PatientProfile/>;
  if(p==='/patient/saved')return <SavedAndInterested/>;
  if(p==='/patient/settings')return <WorkspaceSettings role="patient"/>;
@@ -234,7 +233,7 @@ function App(){
  if(p==='/researcher/trials')return <ClinicalTrialsWorkspace Sidebar={Side}/>;
  if(p==='/researcher/analytics')return <ResearcherAnalytics/>;
  if(p==='/researcher/settings')return <WorkspaceSettings role="researcher"/>;
- if(p==='/researcher/explainer')return <TrialExplainer Sidebar={Side} role="researcher"/>;
+ if(p==='/researcher/explainer')return <ClinicalTrialsWorkspace Sidebar={Side}/>;
  if(p==='/researcher/patients')return <SyntheticPatients Sidebar={Side}/>;
  if(p==='/researcher/sites')return <ResearchSites Sidebar={Side}/>;
  if(p==='/researcher/parser')return <ExplainableMatchDemo Sidebar={Side} aiFitReview/>;
