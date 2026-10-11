@@ -5,7 +5,7 @@ export const AI_REVIEW_QUEUE_KEY = 'vitra-ai-review-queue-v1';
 export const AI_REVIEW_EVENT = 'vitra-ai-review-change';
 
 export function profileName(profile) {
-  return profile?.display_name || `Fictional participant ${profile?.profile_id || ''}`.trim();
+  return (profile?.display_name || `Participant ${profile?.profile_id || ''}`).replace(/\s*\(fictional\)/i, '').trim();
 }
 
 export function availabilityFor(profile) {
