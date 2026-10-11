@@ -31,6 +31,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState(null);
   const [answering, setAnswering] = useState(false);
+  const [loadingStudies, setLoadingStudies] = useState(false);
 
   useEffect(() => {
     const sync = () => setWorkplace(readWorkplace());
@@ -40,15 +41,19 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
 
   useEffect(() => {
     let active = true;
-    searchClinicalTrials({ pageSize: 50 })
-      .then(result => {
-        if (!active) return;
-        setStudies(result.studies);
-        setSelectedStudyId(result.studies[0]?.nctId || '');
-      })
-      .catch(reason => active && setError(reason.message));
-    return () => { active = false; };
-  }, []);
+    const timer = setTimeout(() => {
+      setLoadingStudies(true); setError('');
+      searchClinicalTrials({ query: keyword, status: status === 'all' ? '' : status, type: type === 'all' ? '' : type, pageSize: 50 })
+        .then(result => {
+          if (!active) return;
+          setStudies(result.studies);
+          setSelectedStudyId(current => result.studies.some(study => study.nctId === current) ? current : result.studies[0]?.nctId || '');
+        })
+        .catch(reason => active && setError(reason.message))
+        .finally(() => active && setLoadingStudies(false));
+    }, keyword ? 300 : 0);
+    return () => { active = false; clearTimeout(timer); };
+  }, [keyword, status, type]);
 
   const sites = useMemo(
     () => publicSitesFromStudies(studies).filter(item => locationMatchesWorkplace(item, workplace, scope)),
@@ -61,7 +66,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
     && (site === 'all' || study.locationDetails?.some(item => item.publicLocationText === site))
     && study.locationDetails?.some(item => locationMatchesWorkplace(item, workplace, scope))
   )), [studies, status, type, keyword, site, workplace, scope]);
-  const selectedStudy = studies.find(study => study.nctId === selectedStudyId) || visible[0] || studies[0];
+  const selectedStudy = visible.find(study => study.nctId === selectedStudyId) || visible[0] || studies.find(study => study.nctId === selectedStudyId) || studies[0];
   const broadened = scope !== 'exact';
 
   function chooseStudy(study) {
@@ -82,7 +87,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
       setAnswer(response);
     } catch (reason) {
       setAnswer(localSourceAnswer(selectedStudy, promptedQuestion));
-      setError('The live explainer service is unavailable, so Vitra is showing the selected public record text directly.');
+      setQuestion('');
     } finally {
       setAnswering(false);
     }
@@ -100,7 +105,7 @@ export default function ClinicalTrialsWorkspace({ Sidebar }) {
       <label>Search area<select value={scope} onChange={event => { setScope(event.target.value); setSite('all'); }}><option value="exact">Exact public workplace</option><option value="city">Broaden to city</option><option value="state">Broaden to state / region</option><option value="country">Broaden to country</option></select></label>
       <label>Public hospital / clinic site<select value={site} onChange={event => setSite(event.target.value)}><option value="all">All public sites in search area</option>{sites.map(value => <option key={value.publicLocationText} value={value.publicLocationText}>{value.facility || 'Facility name not provided in the public source'} · {value.city || value.stateOrRegion || value.country}</option>)}</select></label>
     </section>
-    {!studies.length && !error && <div className="empty">Loading ClinicalTrials.gov records…</div>}
+    {loadingStudies && <div className="empty">Searching ClinicalTrials.gov records…</div>}{!studies.length && !error && !loadingStudies && <div className="empty">Loading ClinicalTrials.gov records…</div>}
     <section className="clinical-trials-content">
       <div className="clinical-study-list">{visible.map(study => {
         const publicSites = (study.locationDetails || []).filter(item => locationMatchesWorkplace(item, workplace, scope));
