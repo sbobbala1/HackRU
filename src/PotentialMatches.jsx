@@ -7,11 +7,37 @@ import WorkplaceBadge from './WorkplaceBadge';
 import { availabilityFor, profileName, saveAiSelection } from './recruitmentWorkflow';
 import { finalistEvent, readFinalistSelections } from './finalistSelections';
 import './potential-matches.css';
-const STUDIES=['NCT05564039','NCT05025787','NCT04791371'];
-export default function PotentialMatches({Sidebar}){
- const [loaded,setLoaded]=useState([]),[finalists,setFinalists]=useState(readFinalistSelections),[expanded,setExpanded]=useState(null),[error,setError]=useState('');
- useEffect(()=>{let live=true;Promise.all(STUDIES.map(getClinicalTrial)).then(async studies=>{const pairs=await Promise.all(studies.map(async study=>[study,await api.rankEligibility(study.nctId,study.studyUrl,criteriaText(study),patients)]));if(live)setLoaded(pairs.flatMap(([study,results])=>results.map(result=>({study,result,profile:patients.find(p=>p.profile_id===result.profile_id)}))))}).catch(e=>live&&setError(e.message));return()=>{live=false}},[]);
- useEffect(()=>{const sync=()=>setFinalists(readFinalistSelections());window.addEventListener(finalistEvent,sync);return()=>window.removeEventListener(finalistEvent,sync)},[]);
- const rows=useMemo(()=>loaded.map(row=>({...row,finalist:Object.values(finalists).find(item=>item.profileId===row.result.profile_id&&item.trialId===row.study.nctId)})).filter(row=>row.finalist),[loaded,finalists]);
- return <div className="portal"><Sidebar role="researcher"/><main className="portal-main potential-matches-page"><div className="page-head"><div><span className="eyebrow">Recruitment workflow · Screening → AI Fit Review → Final Matches</span><h1>Final Matches</h1></div><div className="final-header"><WorkplaceBadge/><button className="btn" disabled={!rows.length} onClick={()=>location.assign('/researcher/outreach')}>Open Outreach Center ({rows.length})</button></div></div>{error&&<div className="form-error">{error}</div>}<section className="match-metric-grid">{[[rows.length,'Assigned Final Matches'],[rows.reduce((n,row)=>n+row.result.counts.MET,0),'Requirements met'],[rows.reduce((n,row)=>n+row.result.counts['NOT MET'],0),'Requirements not met'],[rows.reduce((n,row)=>n+row.result.counts.UNKNOWN,0),'Unknown requirements'],[rows.length,'Simulated drafts created']].map(([value,label])=><article key={label}><b>{value}</b><span>{label}</span></article>)}</section><section className="final-chart-wrap"><table className="final-chart"><thead><tr><th>Participant</th><th>Trial / public site</th><th>Consent & availability</th><th>Deterministic result</th><th>Requirements</th><th>Assigned</th><th>Outreach draft</th><th>Actions</th></tr></thead><tbody>{rows.map(row=><React.Fragment key={`${row.study.nctId}:${row.result.profile_id}`}><tr><td><b>{profileName(row.profile)}</b><small>{row.result.profile_id} · fictional synthetic participant</small></td><td><b>{row.study.nctId}</b><small>{row.study.title}</small><small>{row.finalist.publicSite}</small></td><td><small>Fictional consent recorded</small><b>{availabilityFor(row.profile)}</b></td><td><b>Potential Match</b><small>Deterministic, source-linked evidence</small></td><td>Met {row.result.counts.MET}<br/>Not met {row.result.counts['NOT MET']}<br/>Unknown {row.result.counts.UNKNOWN}</td><td><small>{new Date(row.finalist.selectedAt).toLocaleString()}</small></td><td>{row.finalist.outreachDraftStatus}</td><td><button className="link-btn" onClick={()=>setExpanded(expanded===row.result.profile_id?null:row.result.profile_id)}>{expanded===row.result.profile_id?'Hide detail':'View requirements'}</button><button className="link-btn" onClick={()=>{saveAiSelection({studyId:row.study.nctId,profileId:row.result.profile_id});location.assign('/researcher/ai-fit-review')}}>Open AI review</button></td></tr>{expanded===row.result.profile_id&&<tr className="final-detail"><td colSpan="8"><h3>Requirement-by-requirement evidence</h3>{row.result.criteria.map(item=><article key={item.criterion_id}><b>{item.status} · {item.criterion}</b><p><b>ClinicalTrials.gov source text:</b> {item.original_text}</p><p><b>Evidence:</b> {item.profile_evidence}</p><small>{item.explanation}</small></article>)}</td></tr>}</React.Fragment>)}{!rows.length&&<tr><td colSpan="8"><div className="empty">No Final Matches yet. In Screening, mark a cleared record Ready for AI Fit Review; then use Assign to Final Matches in AI Fit Review.</div></td></tr>}</tbody></table></section></main></div>;
+
+const STUDIES = ['NCT05564039', 'NCT05025787', 'NCT04791371'];
+
+export default function PotentialMatches({ Sidebar }) {
+  const [loaded, setLoaded] = useState([]);
+  const [finalists, setFinalists] = useState(readFinalistSelections);
+  const [expanded, setExpanded] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let live = true;
+    Promise.all(STUDIES.map(getClinicalTrial)).then(async studies => {
+      const pairs = await Promise.all(studies.map(async study => [study, await api.rankEligibility(study.nctId, study.studyUrl, criteriaText(study), patients)]));
+      if (live) setLoaded(pairs.flatMap(([study, results]) => results.map(result => ({ study, result, profile: patients.find(profile => profile.profile_id === result.profile_id) }))));
+    }).catch(reason => live && setError(reason.message));
+    return () => { live = false; };
+  }, []);
+  useEffect(() => {
+    const sync = () => setFinalists(readFinalistSelections());
+    window.addEventListener(finalistEvent, sync);
+    return () => window.removeEventListener(finalistEvent, sync);
+  }, []);
+
+  const rows = useMemo(() => loaded.map(row => ({ ...row, finalist: Object.values(finalists).find(item => item.profileId === row.result.profile_id && item.trialId === row.study.nctId) })).filter(row => row.finalist), [loaded, finalists]);
+  return <div className="portal"><Sidebar role="researcher"/><main className="portal-main potential-matches-page">
+    <div className="page-head"><div><span className="eyebrow">Recruitment workflow · Screening → AI Fit Review → Final Matches</span><h1>Final Matches</h1></div><div className="final-header"><WorkplaceBadge/><button className="btn" disabled={!rows.length} onClick={() => location.assign('/researcher/outreach')}>Open Outreach Center ({rows.length})</button></div></div>
+    {error && <div className="form-error">{error}</div>}
+    <section className="match-metric-grid">{[[rows.length, 'Assigned Final Matches'], [rows.reduce((count, row) => count + row.result.counts.MET, 0), 'Requirements met'], [rows.reduce((count, row) => count + row.result.counts['NOT MET'], 0), 'Requirements not met'], [rows.reduce((count, row) => count + row.result.counts.UNKNOWN, 0), 'Unknown requirements']].map(([value, label]) => <article key={label}><b>{value}</b><span>{label}</span></article>)}</section>
+    <section className="final-chart-wrap"><table className="final-chart"><thead><tr><th>Participant</th><th>Trial / public site</th><th>Consent & availability</th><th>Deterministic result</th><th>Requirements</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>
+      {rows.map(row => <React.Fragment key={`${row.study.nctId}:${row.result.profile_id}`}><tr><td><b>{profileName(row.profile)}</b><small>{row.result.profile_id} · fictional synthetic participant</small></td><td><b>{row.study.nctId}</b><small>{row.study.title}</small><small>{row.finalist.publicSite}</small></td><td><small>Fictional consent recorded</small><b>{availabilityFor(row.profile)}</b></td><td><b>Potential Match</b><small>Deterministic, source-linked evidence</small></td><td>Met {row.result.counts.MET}<br/>Not met {row.result.counts['NOT MET']}<br/>Unknown {row.result.counts.UNKNOWN}</td><td><small>{new Date(row.finalist.selectedAt).toLocaleString()}</small></td><td><button className="link-btn" onClick={() => setExpanded(expanded === row.result.profile_id ? null : row.result.profile_id)}>{expanded === row.result.profile_id ? 'Hide detail' : 'View requirements'}</button><button className="link-btn" onClick={() => { saveAiSelection({ studyId: row.study.nctId, profileId: row.result.profile_id }); location.assign('/researcher/ai-fit-review'); }}>Open AI review</button></td></tr>{expanded === row.result.profile_id && <tr className="final-detail"><td colSpan="7"><h3>Requirement-by-requirement evidence</h3>{row.result.criteria.map(item => <article key={item.criterion_id}><b>{item.status} · {item.criterion}</b><p><b>ClinicalTrials.gov source text:</b> {item.original_text}</p><p><b>Evidence:</b> {item.profile_evidence}</p><small>{item.explanation}</small></article>)}</td></tr>}</React.Fragment>)}
+      {!rows.length && <tr><td colSpan="7"><div className="empty">No Final Matches yet. In Screening, mark a cleared record Ready for AI Fit Review; then use Assign to Final Matches in AI Fit Review.</div></td></tr>}
+    </tbody></table></section>
+  </main></div>;
 }
